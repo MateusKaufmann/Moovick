@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Login
+        </title>
+</head>
+
+<body style="overflow-y: hidden; height: max-content;">
+    <!----------------------------------Inicial----------------------------------->
+
+    <section style="height: 100%;">
+        <div class="container-fluid bg-transparent" style="height: 100%;">
+            <div class="row" style="height: 30%; width: 100;">
+                <div class="col-md-12">
+                    <center>
+                        <img src="assets/logos/logo.png" class="animated animate__fadeInLeft fast" style="height: 5rem; margin-top: 6rem;" alt="">
+                        <hr style="width: 20rem;" class="bg-white animated animate__flipInY">
+
+                    </center>
+                </div>
+
+            </div>
+
+            <div class="row" style="height: 100%; padding-top: 5rem;">
+                <div class="col-md-4"></div>
+                <div class="col-md-4 bg-white animated animate__slideInUp fast" style="height: 100%; padding-bottom: 3rem; border-radius: 10px; margin: 1rem; margin-bottom: 30rem;">
+                    <form method="POST" action="auth" style="padding: 4rem; padding-top: 3rem; padding-bottom: 1rem;">
+                        <div class="input-group mb-3">
+                            <% if (data.stts) { %>
+                                <div class="alert alert-secondary alert-dismissible fade show" role="alert" style="width: 100%;">
+                                    <strong>Ops! </strong>
+                                    <%= data.stts%>
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <% } else { %>
+                                    <p class="card-text text-center">Insira suas credenciais para acessar.</p>
+                                    <% } %>
+
+                        </div>
+                        <div class="input-group mb-3">
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Seu email">
+                        </div>
+                        <div class="input-group mb-3">
+                            <input type="password" class="form-control" id="" name="password" placeholder="Sua senha">
+                        </div>
+                        <div class="input-group mb-3">
+
+                            <button class="btn btn-secondary" style="width: 100%; background-color: rgb(46, 46, 168);" type="submit">Entrar</button>
+
+                        </div>
+                        <div class="input-group mb-3">
+                            <p class="card-text text-center text-secondary">Não possui uma conta? Clique <a href="cadastro" style="color: black; text-decoration: underline;">aqui</a> para se cadastrar</p>
+                        </div>
+
+                    </form>
+
+                </div>
+                <div class="col md-4"></div>
+            </div>
+        </div>
+    </section>
+
+</body>
+
+</html>

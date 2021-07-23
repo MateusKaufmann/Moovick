@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Cadastro
+        </title>
+</head>
+
+<body>
+    <!----------------------------------Inicial----------------------------------->
+
+    <section style="height: 100%;">
+        <div class="container-fluid bg-transparent" style="height: 100%;">
+            <div class="row" style="height: 30%; width: 100;">
+                <div class="col-md-12">
+                    <center>
+                        <img src="assets/logos/logo.png" class="animated animate__fadeInLeft fast" style="height: 5rem; margin-top: 6rem;" alt="">
+                        <hr style="width: 20rem;" class="bg-white animated animate__flipInY">
+
+                    </center>
+                </div>
+
+            </div>
+
+            <div class="row" style="height: 100%; padding-top: 5rem;">
+                <div class="col-md-3"></div>
+                <div class="col-md-6 bg-white animated animate__slideInUp fast" style="height: 100%; padding-bottom: 2rem; border-radius: 10px; margin: 1rem; margin-bottom: 0;">
+                    <form action="cadastrar" style="padding: 3rem;padding-bottom: 1rem; padding-top: 3rem;" method="POST" name="formularioCadastro">
+                        <div class="alert alert-warning" id="erro" role="alert" style="display: none;">Erro!!!!!</div>
+                        <% if (data.erro) { %>
+                            <div class="alert alert-warning" id="erroServer" role="alert">
+                                <%= data.erro%>
+                            </div>
+                            <% } else { %>
+                                <p class="card-text text-center">Precisamos de alguns dados para realizar seu cadastro :)</p>
+                                <% } %>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="nome_completo" name="nome_completo" placeholder="Seu nome completo">
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" id="apelido" name="apelido" placeholder="Escolha um apelido">
+                                        <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" placeholder="Data de nascimento">
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <input type="email" class="form-control" aria-describedby="emailHelp" id="email" name="email" placeholder="Seu E-mail">
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <input type="password" class="form-control" id="senha" name="senha" placeholder="Crie uma senha">
+                                        <input type="password" class="form-control" id="senhaConfirma" name="senhaConfirma" placeholder="Confirme a senha">
+                                    </div>
+                                    <div class="imput-group mb-3"><small id="emailHelp" class="form-text text-muted"><strong>Importante:</strong> a senha precisa conter, no mínimo, 8 caracteres.</small></div>
+                                    <div class="input-group mb-3">
+                                        <textarea type="text" id="descricao" name="descricao" placeholder="Conte um pouco sobre você" class="form-control h-100"></textarea>
+                                    </div>
+                                    <div class="imput-group mb-3"><small id="emailHelp" class="form-text text-muted">Revise seus dados antes de confirmar e lembre-se: ao se cadastrar no Moovick, você concorda com os  nossos <a href="termos">termos de utilização</a>
+                    </small></div>
+                                    <center>
+                                        <div class="input-group mb-3">
+                                            <button class="btn btn-secondary" type="button" onclick="cadastrarUsuario()">Cadastrar</button>
+                                        </div>
+                                    </center>
+                    </form>
+                </div>
+                <div class="col md-3"></div>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

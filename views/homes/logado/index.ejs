@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../../externos/files'); %>
+        <title>Moovick |
+            <%= data.user_data['apelido'] %>
+        </title>
+</head>
+
+<body>
+    <%- include('../../menus/bar', {active: "home"}); %>
+        <!----------------------------------Inicial----------------------------------->
+        <section style="height: 100%; overflow-y:hidden;">
+            <div class="container-fluid">
+                <div class="row" style="height: 30%;">
+                    <div class="col-md-5 animated animate__fadeInLeft logo-animado" style="padding-top: 2em; ">
+
+                        <center>
+                            <img src="assets/logos/logo.png" class="" style="width: 50%; padding-top: 6%;" alt="">
+                            <br/>
+                            <br/>
+                            <br/>
+                            <br/>
+
+                        </center>
+                    </div>
+                    <div class="col-md-7 animaed animate__fadeIn">
+                    </div>
+                </div>
+                <div class="row" style="height: 60%;"></div>
+                <div class="col-md-12 animated animate__slideInUp slow bg-white deck-animado" style="padding-top: 4%; padding-left: 8%; padding-right: 8%; border-radius: 10px; padding-bottom: 10%; -webkit-box-shadow: 0px -6px 7px 2px rgba(46, 50, 50, 0.25); -moz-box-shadow:    0px -6px 7px 2px rgba(46, 50, 50, 0.25);box-shadow:         0px -6px 7px 2px rgba(46, 50, 50, 0.25);">
+
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-md-3">
+                        <a href="disciplinas" class="col mb-4 animated animate__fadeIn slow link-card" style="text-decoration: none;">
+                            <div class="card">
+                                <div class="card-body bg-white" style="background-image: url('assets/backgrounds/classes.png'); background-repeat: no-repeat; background-size: cover;">
+                                    <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Disciplinas</h6>
+                                    <p class="card-text text-white">ENEM e Vestibulares</p>
+                                </div>
+                                <div class="card-body bg-white" style="height: 10rem;">
+                                    <h6 class="card-title text-dark" style="font-size: 1rem; font-weight:300;">Sobre esta seção:</h6>
+                                    <p class="card-text text-dark" style="font-size: 0.9rem; font-weight: 300;">Contém a lista com as disciplinas disponíveis na plataforma.</p>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="biblioteca" class="col mb-4 text-dark  animated animate__fadeIn slow link-card" style="text-decoration: none;">
+                            <div class="card">
+                                <div class="card-body bg-white" style="background-image: url('assets/backgrounds/biblioteca.png'); background-repeat: no-repeat; background-size: cover;">
+                                    <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Biblioteca online</h6>
+                                    <p class="card-text text-white">Literaturas Obrigatórias</p>
+                                </div>
+                                <div class="card-body bg-white" style="height: 10rem;">
+                                    <h6 class="card-title" style="font-size: 1rem; font-weight:300;">Sobre esta seção:</h6>
+                                    <p class="card-text" style="font-size: 0.9rem; font-weight: 300;">Contém as leituras obrigatórias para o vestibular da UFRGS.</p>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="userProfile?id=<%= data.user_data['id']%>" class="col mb-4 text-dark animated animate__fadeIn slow link-card" style="text-decoration: none;">
+                            <div class="card">
+                                <div class="card-body bg-white" style="background-image: url('assets/backgrounds/perfil.png'); background-repeat: no-repeat; background-size: cover;">
+                                    <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Perfil</h6>
+                                    <p class="card-text text-white">Dados do usuário</p>
+                                </div>
+                                <div class="card-body bg-white" style="height: 10rem;">
+                                    <h6 class="card-title" style="font-size: 1rem; font-weight:300;">Sobre esta seção:</h6>
+                                    <p class="card-text" style="font-size: 0.9rem; font-weight: 300;">Utilize esta seção para ver ou alterar os dados do seu cadastro no Moovick.</p>
+                                </div>
+                            </div>
+                        </a>
+
+                    </div>
+
+                </div>
+            </div>
+            </div>
+            </div>
+        </section>
+</body>
+
+</html>

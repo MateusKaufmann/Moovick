@@ -1,0 +1,39 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-transparent animated animate__fadeInDown faster navbar-animada" style="z-index: 1000; max-width: 100%;">
+    <%if(active !='perfil'){%>
+        <a class="navbar-brand" href="userProfile?id=<%= data.user_data['id']%>">
+            <div class="row" style="padding-left: 2rem;">
+                <div class="rounded-circle" style="width: 2.5rem; height: 2.5rem; background-image: url('<%= data.user_data[`caminho_foto`]%>');  background-position: center; background-size: cover;"></div>
+                <h5 class="card-text" style="padding-left: 0.7rem; padding-top: 0.5rem; padding-right: 0.7rem;">
+                    <%= data.user_data['apelido']%>
+                </h5>
+
+            </div>
+
+        </a>
+        <% } %>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+  <span class="navbar-toggler-icon"></span>
+</button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link <%if(active=='home'){%> active disabled<%}%>" href="/"><i class="fas fa-home"></i> Início<span class="sr-only"></span></a>
+                    </li>
+                    <li class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-sitemap"></i> Guia
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item <%if(active=='biblio'){%> active <%}%>" href="/biblioteca"> Biblioteca Online</a></li>
+                            <li><a class="dropdown-item <%if(active=='discip'){%> active <%}%>" href="/disciplinas"> Disciplinas</a></li>
+                            <%if(data.user_data['administ']){%>
+                                <li><a class="dropdown-item <%if(active=='categ'){%> active <%}%>" href="/minhasCategorias"> Minhas Categorias</a></li>
+                                <% } %>
+                                    <div class="dropdown-divider"></div>
+                                    <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+</nav>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="css/perfil.css">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Perfil
+        </title>
+</head>
+<style>
+    #fotoperfil {
+        background-image: url("<%= data.user_perfil['caminho_foto']%>");
+        background-position: center;
+        background-size: cover;
+    }
+</style>
+
+<body>
+    <%- include('../menus/bar', {active: 'perfil'}); %>
+
+
+
+
+
+
+        <section style="height: 100%; overflow-y:hidden;">
+            <div class="container-fluid">
+                <center>
+
+                    <div class="rounded-circle animated animate__fadeInUp fast" id="fotoperfil" style="background-color:black; border-width: 5px !important; border-style: solid; border-color: white; position: relative; top: 7.5rem; height: 15rem; max-width: 15rem; z-index: 1000;">
+
+                    </div>
+
+
+                </center>
+                <div class="row" style="height: 10%;">
+                    <div class="col-md-5 animated animate__fadeInLeft" style="padding-top: 0em; ">
+                    </div>
+                    <div class="col-md-7 animaed animate__fadeIn">
+                    </div>
+                </div>
+                <div class="col-md-12 animated animate__slideInUp bg-white deck-animado1" id="deck-perfil" style="padding-top: 9rem; padding-left: 8%; padding-right: 8%; border-radius: 10px; padding-bottom: 10%; -webkit-box-shadow: 0px -6px 7px 2px rgba(46, 50, 50, 0.25); -moz-box-shadow:    0px -6px 7px 2px rgba(46, 50, 50, 0.25);box-shadow:         0px -6px 7px 2px rgba(46, 50, 50, 0.25);">
+                    <center>
+                        <h2 class="card-text">
+                            <strong><%= data.user_perfil['apelido'] %></strong>
+
+                        </h2>
+                        <br>
+                        <p class="card-text" style="padding-bottom: 2rem; width: 70%">
+                            <%= data.user_perfil['biografia'] %>
+                        </p>
+                    </center>
+                    <hr style="border-width: 2px; ">
+                    <% if (data.erro) { %>
+                        <div class="alert alert-warning" role="alert">
+                            Verifique se preencheu os campos corretamente.
+                        </div>
+                        <% } else if (data.sucesso) { %>
+                            <div class="alert alert-success" role="alert">
+                                As alterações no seu perfil foram feitas com êxito.
+                            </div>
+                            <% } %>
+                                <div class="row row-cols-1 row-cols-md-2">
+
+                                    <div class="col mb-4 text-dark animated animate__fadeIn slow" style="text-decoration: none;">
+                                        <div class="card">
+                                            <div class="card-body bg-white">
+                                                <h6 class="card-title text-white text-dark" style="font-size: 1.7rem; font-weight:300;">Dados do Usuário</h6>
+                                            </div>
+                                            <div class="card-body bg-white" style="height: 11.5rem;">
+                                                <p class="card-text text-dark"><strong>Email: </strong>
+                                                    <%= data.user_perfil['email'] %>
+                                                </p>
+                                                <p class="card-text text-dark"><strong>Nome: </strong>
+                                                    <%=data.user_perfil['nome_completo'] %>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col mb-4 text-dark animated animate__fadeIn slow" style="text-decoration: none;">
+                                        <% if (data.user_perfil['administ']) {%>
+
+
+                                            <div class="card">
+                                                <div class="card-body bg-white" style="background-image: url('assets/backgrounds/perfil.png'); background-repeat: no-repeat; background-size: cover;">
+                                                    <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Professor</h6>
+                                                    <p class="card-text text-white">Conta verificada. <br/><i class="fas fa-pencil-ruler"></i>
+                                                        <%= data.user_perfil['numero_de_conteudos'] %> Posts </strong>
+                                                    </p>
+                                                </div>
+                                            </div>
+
+
+
+                                            <% } else { %>
+
+                                                <div class="card">
+                                                    <div class="card-body bg-white" style="background-image: url('assets/backgrounds/sites.png'); background-repeat: no-repeat; background-size: cover;">
+                                                        <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Aluno</h6>
+                                                        <p class="card-text text-white">Conta padrão do Moovick</p>
+                                                    </div>
+                                                </div>
+
+
+                                                <% } %>
+                                                    <br/>
+                                                    <% if (data.user_data['id'] == data.user_perfil['id']) {%>
+
+
+
+                                                        <div id="btn-mudar-dados" class="card">
+                                                            <div class="card-body bg-white" style="background-image: url('assets/backgrounds/classes.png'); background-repeat: no-repeat; background-size: cover; cursor: pointer;">
+                                                                <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Credenciais e dados</h6>
+                                                                <p class="card-text text-white">Clique para editar</p>
+                                                            </div>
+                                                        </div>
+                                                        <% } %>
+
+
+
+                                    </div>
+                                </div>
+
+                </div>
+                <div class="col-md-12 animated animate__slideInUp faster bg-white deck-animado2" style="padding-top: 9rem; padding-left: 8%; padding-right: 8%; border-radius: 10px; padding-bottom: 10%; -webkit-box-shadow: 0px -6px 7px 2px rgba(46, 50, 50, 0.25); -moz-box-shadow:    0px -6px 7px 2px rgba(46, 50, 50, 0.25);box-shadow:         0px -6px 7px 2px rgba(46, 50, 50, 0.25); display: none;">
+                    <center>
+                        <h2 class="card-text">
+                            <strong><%= data.user_perfil['apelido'] %></strong>
+
+                        </h2>
+                        <br>
+                        <p class="card-text" style="padding-bottom: 2rem; width: 70%">
+                            <%= data.user_perfil['biografia'] %>
+                        </p>
+                    </center>
+                    <hr style="border-width: 2px; ">
+                    <div class="row row-cols-1">
+
+                        <% if (data.user_data['id'] == data.user_perfil['id']) {%>
+                            <h4 class="card-text">Seus dados</h4>
+                            <br/>
+                            <% if (data.erro) { %>
+                                <div class="alert alert-warning" role="alert">
+                                    Verifique se preencheu os campos corretamente.
+                                </div>
+                                <% } else if (data.sucesso) { %>
+                                    <div class="alert alert-success" role="alert">
+                                        Alterado com sucesso
+                                    </div>
+                                    <% } %>
+                                        <form action="/mudarDados" method="POST">
+
+                                            <div class="form-group row">
+                                                <label for="staticEmail" class="col-sm-2 col-form-label">Email</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="<%= data.user_perfil['email'] %>">
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label for="staticEmail" class="col-sm-2 col-form-label">Nome</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="<%= data.user_perfil['nome_completo'] %>">
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label for="inputPassword" class="col-sm-2 col-form-label">Apelido</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" id="inputPassword" onkeyup="this.value=this.value.replace(/[' ']/g,'')" placeholder="Username" name='apelido' value="<%= data.user_perfil['apelido'] %>">
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label for="inputPassword" class="col-sm-2 col-form-label">Senha</label>
+                                                <div class="col-sm-5">
+                                                    <input type="password" class="form-control" id="inputPassword" name="senha" placeholder="Nova senha">
+                                                </div>
+                                                <div class="col-sm-5">
+                                                    <input type="password" class="form-control" id="inputPassword" name="senhaConfirma" placeholder="Confirmar">
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label for="inputPassword" class="col-sm-2 col-form-label">Biografia</label>
+                                                <div class="col-sm-10">
+                                                    <textarea class="form-control" name="descricao" aria-label="With textarea"><%= data.user_perfil['biografia'] %></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label for="inputPassword" class="col-sm-2 col-form-label"></label>
+                                                <div class="col-sm-10">
+                                                    <button type="submit" class="btn btn-primary">Salvar</button>
+
+                                                </div>
+                                            </div>
+                                        </form>
+                                        <form action="/mudarFotoUsuario" method="post" enctype="multipart/form-data">
+                                            <div class="input-group mb-3">
+                                                <label for="inputPassword" class="col-sm-2 col-form-label">Foto</label>
+                                                <input type="file" name="fotoPerfil" class="form-control text-secondary bg-white" />
+                                                <div class="input-group-append">
+                                                    <button type="submit" class="btn btn-primary">Salvar</button>
+
+                                                </div>
+
+                                            </div>
+                                            <div class="input-group mb-3">
+                                                <label for="inputPassword" class="col-sm-2 col-form-label"></label>
+                                                <button type="button" onclick="window.location.reload()" class="btn btn-secondary">Cancelar</button>
+
+                                            </div>
+
+                                        </form>
+                                        <% } %>
+                    </div>
+
+                </div>
+            </div>
+            </div>
+            </div>
+
+        </section>
+
+</body>
+
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick |
+            <%= data.dadosDisciplina[0]['nome'] %>
+        </title>
+</head>
+<style>
+    body {
+        background-image: url("assets/icons/<%= data.dadosDisciplina[0]['id'] %>.png");
+        background-repeat: no-repeat;
+    }
+</style>
+
+<body>
+    <%- include('../menus/bar', {active: null}); %>
+        <!----------------------------------Inicial----------------------------------->
+
+        <section style="height: 100%; overflow-y:hidden;">
+            <div class="container-fluid">
+                <div class="row" style="height: 30%;">
+                    <div class="col-md-3 animated animate__fadeInLeft faster logo-animado" style="padding-top: 2em; ">
+
+
+                        <h1 class="card-text text-white" style="width: 100%; padding-top: 6%; font-weight: lighter; text-align: center;">
+                            <%= data.dadosDisciplina[0]['titulo'] %>
+                        </h1>
+                        <br/>
+                        <br/>
+                        <br/>
+
+
+                    </div>
+                    <div class="col-md-9 animaed animate__fadeIn">
+                    </div>
+                </div>
+                <div class="row" style="padding-right: 1rem; padding-left: 1rem;">
+                    <div class="col-md-3" style="border-radius: 10px; position:static;">
+                        <div class="col mb-4">
+                            <div class="card animated animate__slideInLeft" style="text-decoration: none;">
+                                <div class="card-body bg-light" style=" height: 28rem;">
+                                    <center>
+                                        <h6 class="card-title text-white text-dark" style="font-size: 1.7rem; font-weight:300;">
+                                            Filtros
+                                        </h6>
+                                    </center>
+                                    <div class="input-group mb-3">
+                                        <input type="text" id="campo_busca" placeholder="Busca por título" class="form-control">
+                                        <div class="input-group-append">
+                                            <button type="button" onclick="buscar()" class="input-group-text bg-secondary"><i class="fas fa-search"></i></button>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="input-group mb-3">
+                                        <select class="custom-select" id="categoria">
+                                            <option selected value="">Categoria:</option>
+                                            <% if (data.categorias != null) { %> 
+                                              <% for(var i=0; i<data.categorias.length; i++){ %>        
+                                                          <option class="animated animate__backInRight" value="<%= data.categorias[i]['id'] %>"><%= data.categorias[i]['titulo'] %></option>
+                                                  <% } %>
+                                                <% } else { %> 
+                                                <% } %> 
+                                          </select>
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <select class="custom-select" id="user">
+                                            <option selected value="">Publicado por:</option>
+                                            <% if (data.users != null) { %> 
+                                              <% if (data.user_data['administ'] == true) { %>
+                                                  <option class="text-primary" value="<%= data.user_data['id'] %>">Por mim</option>
+                                              <% } %>  
+                                              <% for(var i=0; i<data.users.length; i++){ %>        
+                                                          <option class="animated animate__backInRight" value="<%= data.users[i]['id'] %>"><%= data.users[i]['apelido'] %></option>
+                                                  <% } %>
+                                                <% } else { %> 
+                                                <% } %> 
+                                          </select>
+
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <select class="custom-select" id="tipo">
+                                            <option selected value="">Formato de arquivo:</option>
+                                            <% if (data.extensoes != null) { %> 
+                                              <% for(var i=0; i<data.extensoes.length; i++){ %>        
+                                                          <option class="animated animate__backInRight" value="<%= data.extensoes[i]['id'] %>">.<%= data.extensoes[i]['extensao'] %></option>
+                                                  <% } %>
+                                                <% } else { %> 
+                                                <% } %> 
+                                          </select>
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <button class="btn btn-secondary btn-block" type="button" onclick="filtrar()">Busca</button>
+                                    </div>
+                                    <hr>
+                                    <% if (data.user_data['administrador'] == true) { %>
+                                        <div class="input-group mb-3">
+                                            <a href="novo?disciplina=<%= data.idDisciplina %>" class="btn btn-success btn-block">Adicionar Conteúdos</a>
+                                        </div>
+                                        <% }%>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-9 card-body col mb-4 card animated animate__slideInUp bg-white deck-animado" style="padding-top: 4%; padding-left: 8%; padding-right: 8%; border-radius: 10px; padding-bottom: 10%; -webkit-box-shadow: 0px -6px 7px 2px rgba(46, 50, 50, 0.25); -moz-box-shadow:    0px -6px 7px 2px rgba(46, 50, 50, 0.25);box-shadow:         0px -6px 7px 2px rgba(46, 50, 50, 0.25);">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-md-3">
+
+                            <% if (data.allconteudos != null) { %>
+                                <% for(var i=0; i<data.allconteudos.length; i++){ %>
+                                    <div class="col mb-4 animated animate__fadeIn slow" style="text-decoration: none;">
+                                        <div class="card">
+                                            <div class="card-body bg-light" style="height: 10rem;">
+                                                <h6 class="card-title text-white text-dark" style="font-size: 1.7rem; font-weight:300;">
+                                                    <%= data.allconteudos[i]['titulo'] %>
+                                                </h6>
+                                                <p class="card-text text-dark" style="font-size: 0.8rem; font-weight:300;">Publicado em:
+                                                    <%= data.allconteudos[i]['postagem'] %>
+                                                </p>
+                                                <p class="card-text text-dark" style="font-size: 0.8rem; font-weight:300;">Por:
+                                                    <a href="userProfile?id=<%= data.allconteudos[i]['criadorId'] %>">
+                                                        <%= data.allconteudos[i]['criadorApelido'] %>
+                                                    </a>
+                                                </p>
+                                            </div>
+                                            <div class="card-body bg-white" style="height: 10rem;">
+
+                                                <h6 class="card-title text-dark" style="font-size: 1rem; font-weight:300;"><strong>Informações</strong></h6>
+                                                <p class="card-text text-dark" style="font-size: 0.9rem; font-weight: 300;">
+                                                    <%= data.allconteudos[i]['resumoConteudo'] %>
+                                                </p>
+                                                <p class="card-text text-dark" style="font-size: 0.9rem; font-weight: 300;">
+                                                    <strong>Tipo de arquivo:</strong>
+                                                    <%= data.allconteudos[i]['extensao'] %><br/><strong> Categoria:</strong>
+                                                        <%= data.allconteudos[i]['categoria'] %>
+                                                </p>
+
+
+                                            </div>
+                                            <div class="card-body bg-white" style="height: 8rem;">
+                                                <a href="uploads/conteudos/<%= data.allconteudos[i]['caminho_arquivo'] %>" class="btn btn-light btn-block" type="button">Visualizar</a>
+                                                <% if (data.allconteudos[i]['criadorId'] == data.user_data['id']) { %>
+
+                                                    <a href="excluirConteudo?id=<%= data.allconteudos[i]['idConteudo'] %>&idDisciplina=<%= data.idDisciplina %>" class="btn btn-danger btn-block excluir-conteudo-link" type="button">Excluir</a>
+
+                                                    <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                        <% } else { %>
+
+                                            <a class="col mb-4 animated animate__fadeIn slow" style="text-decoration: none;">
+                                                <div class="card">
+                                                    <div class="card-body bg-secondary" style="height: 8rem;">
+                                                        <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Ops!</h6>
+                                                        <p class="card-text text-white">Não há nada aqui!</p>
+                                                    </div>
+
+                                                </div>
+                                            </a>
+
+                                            <% } %>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            </div>
+        </section>
+</body>
+
+</html>

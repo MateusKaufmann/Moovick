@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Novo
+        </title>
+</head>
+<style>
+    body {
+        background-image: url("assets/icons/<%= data.dadosDisciplina[0]['id'] %>.png");
+        background-repeat: no-repeat;
+    }
+</style>
+
+<body>
+    <%- include('../menus/bar', {active: ""}); %>
+        <!----------------------------------Inicial----------------------------------->
+        <section style="height: 100%;">
+            <div class="container-fluid bg-transparent" style="height: 100%;">
+                <div class="row" style="height: 30%;">
+                    <div class="col-md-12 animated animate__fadeInLeft logo-animado" style="padding-top: 2em; ">
+
+                        <center>
+                            <h1 class="card-text text-white" style="width: 50%; padding-top: 6%; font-weight: lighter;">
+                                Inserção de conteúdo:<br/>
+                                <%= data.dadosDisciplina[0]['titulo'] %>
+                            </h1>
+                            <br/>
+                            <br/>
+
+
+                        </center>
+                    </div>
+
+                </div>
+                <div class="row" style="height: 100%; padding-top: 5rem;">
+                    <div class="col-md-3"></div>
+                    <div class="col-md-6 bg-white animated animate__slideInUp fast" style="height: 100%; padding-bottom: 2rem; border-radius: 10px; margin: 1rem; margin-bottom: 0;">
+
+                        <form action="/addConteudo?disciplina=<%= data.dadosDisciplina[0]['id'] %>" method="POST" enctype="multipart/form-data" name="formularioConteudo" style="padding: 3rem;padding-bottom: 1rem; padding-top: 3rem;">
+                            <div class="alert alert-warning" id="erro" role="alert" style="display: none;">Erro!!!!!</div>
+                            <% if (data.erro) { %>
+                                <div class="alert alert-warning" style="border-radius: 1rem; border-color:cadetblue; margin-left: 1rem; margin-right: 1rem;" id="erroServer" role="alert">
+                                    <%= data.erro%>
+                                </div>
+                                <% } %>
+                                    <div class="form-group row">
+                                        <label for="staticEmail" class="col-sm-2 col-form-label">Título</label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" placeholder="Ex: 'Semana 1 - Matemática'" aria-label="Username" aria-describedby="basic-addon1" id="titulo" name="titulo">
+                                        </div>
+                                    </div>
+
+
+                                    <div class="form-group row">
+                                        <label for="staticEmail" class="col-sm-2 col-form-label">Categoria</label>
+                                        <div class="col-sm-10">
+                                            <select class="custom-select" id="categoria" name="categoria">
+                          <option selected>Selecione</option>
+                          <% if (data.categorias != null) { %> 
+                            <% for(var i=0; i<data.categorias.length; i++){ %>        
+                                        <option class="animated animate__backInRight" value="<%= data.categorias[i]['id'] %>"><%= data.categorias[i]['titulo'] %></option>
+                                <% } %>
+                              <% } else { %> 
+                              <% } %> 
+                        </select>
+                                        </div>
+
+                                    </div>
+                                    <center>
+                                        <a href="minhasCategorias" class="btn btn-light" for="inputGroupSelect01"><i class="fas fa-tags"></i> Gerenciar Categorias</a>
+                                    </center>
+                                    <br/>
+                                    <div class="form-group row">
+                                        <label for="staticEmail" class="col-sm-2 col-form-label">Descrição</label>
+                                        <div class="col-sm-10">
+                                            <textarea class="form-control" aria-label="With textarea" placeholder="Limite de 100 caracteres" id="resumo" name="resumo" maxlength="100"></textarea>
+                                        </div>
+                                    </div>
+                                    <br/>
+                                    <div class="form-group row">
+                                        <label for="staticEmail" class="col-sm-2 col-form-label">Arquivo</label>
+                                        <div class="col-sm-10">
+                                            <input type="file" accept=".doc,.docx,.jpg,.jpeg,.png,.pptx,.ppt,.pdf,.txt" class="form-control" id="file" name="file" aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="cadastrarConteudo()" class="btn btn-secondary">Pronto</button>
+                        </form>
+                    </div>
+                    <div class="col md-3"></div>
+                </div>
+            </div>
+        </section>
+
+</body>
+
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Biblioteca
+        </title>
+</head>
+
+<body>
+    <%- include('../menus/bar', {active: 'biblio'}); %>
+        <!----------------------------------Inicial----------------------------------->
+        <section style="height: 100%; overflow-y:hidden;">
+            <div class="container-fluid">
+                <div class="row" style="height: 30%;">
+                    <div class="col-md-4 animated animate__fadeInLeft fast logo-animado" style="padding-top: 2em; ">
+
+
+                        <h1 class="card-text text-white" style="width: 100%; padding-top: 6%; font-weight: lighter; text-align: center;">
+                            Biblioteca Online
+                        </h1>
+                        <br/>
+                        <br/>
+                        <br/>
+
+
+                    </div>
+                    <div class="col-md-8 animaed animate__fadeIn">
+                    </div>
+                </div>
+
+                <div class="row" style="padding-right: 1rem; padding-left: 1rem;">
+
+                    <div class="col-md-12 card-body col mb-4 card animated animate__slideInUp bg-white deck-animado" style="padding-top: 4%; padding-left: 8%; padding-right: 8%; border-radius: 10px; padding-bottom: 10%; -webkit-box-shadow: 0px -6px 7px 2px rgba(46, 50, 50, 0.25); -moz-box-shadow:    0px -6px 7px 2px rgba(46, 50, 50, 0.25);box-shadow:         0px -6px 7px 2px rgba(46, 50, 50, 0.25);">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="input-group mb-3 bg-transparent" style="border-radius: 10px;">
+                                    <div class="input-group-prepend bg-transparent">
+                                        <% if (data.user_data['administrador'] == true) { %>
+                                            <a class="btn btn-secondary" href="/addLivro">Adicionar Livro</a>
+                                            <% }%>
+                                    </div>
+                                    <input type="text" id="campo_busca_livro" placeholder="Busca por título" class="form-control">
+                                    <div class="input-group-append bg-transparent">
+                                        <button type="button" onclick="buscarLivro()" class="btn btn-secondary"><i class="fas fa-search"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <br>
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-md-3 row-cols-md-4">
+                            <% if (data.livros) { %>
+                                <% if (data.livros.length > 0) { %>
+                                    <% for(var i=0; i<data.livros.length; i++){ %>
+                                        <div class="col md-3 animated animate__fadeIn slow" style="text-decoration: none;">
+                                            <div class="card">
+                                                <div class="card-body bg-light" style="height: 10rem;">
+                                                    <h6 class="card-title text-white text-dark" style="font-size: 1.7rem; font-weight:300;">
+                                                        <%= data.livros[i]['titulo']%>
+                                                    </h6>
+                                                    <p class="card-text text-dark" style="font-size: 0.8rem; font-weight:300;">Postado por:
+                                                        <a href="userProfile?id=<%= data.livros[i]['idUser'] %>">
+                                                            <%= data.livros[i]['apelido'] %>
+                                                        </a>
+                                                    </p>
+                                                </div>
+                                                <div class="card-body bg-white" style="height: 10rem;">
+
+                                                    <h6 class="card-title text-dark" style="font-size: 1rem; font-weight:300;"><strong>Informações</strong></h6>
+                                                    <p class="card-text text-dark" style="font-size: 0.9rem; font-weight: 300;">
+                                                        Autor:
+                                                        <%= data.livros[i]['autor']%>
+                                                    </p>
+                                                    <p class="card-text text-dark" style="font-size: 0.9rem; font-weight: 300;">
+                                                        <strong>Ano:</strong>
+                                                        <%= data.livros[i]['ano']%><br/><strong>
+                                                    </p>
+
+
+                                                </div>
+                                                <div class="card-body bg-white" style="height: 8rem;">
+                                                    <a href="/uploads/livros/<%= data.livros[i]['arquivo']%>" class="btn btn-light btn-block" type="button">Visualizar</a>
+                                                    <% if (data.livros[i]['idUser'] == data.user_data['id']) { %>
+
+                                                        <a href="/deletarLivro?id=<%= data.livros[i]['id'] %>" class="btn btn-danger btn-block excluir-conteudo-link" type="button">Excluir</a>
+
+                                                        <% } %>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <% } %>
+                                            <%} else {%>
+
+                                                <a class="col mb-4 animated animate__fadeIn slow link-card" style="text-decoration: none;">
+                                                    <div class="card">
+                                                        <div class="card-body bg-secondary" style="height: 8rem;">
+                                                            <h6 class="card-title text-white text-light" style="font-size: 1.7rem; font-weight:300;">Ops!</h6>
+                                                            <p class="card-text text-white">Não há nada aqui!</p>
+                                                        </div>
+
+                                                    </div>
+                                                </a>
+                                                <% } %>
+
+                                                    <% } %>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            </div>
+        </section>
+</body>
+
+</html>

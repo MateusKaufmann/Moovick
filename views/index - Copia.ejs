@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"|>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>
+    <script src="render.js" defer></script> <!----Importante: Defer significa executar o js só depois da página ser carregada-->
+   
+</head>
+<body>
+
+<!----------------------------------Inicial----------------------------------->
+    
+<section id="banner">
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <center>
+              <canvas id="c"></canvas>
+            </center>
+        </div>
+        <div class="col-md-6 text-center">
+            <center>
+            <div class="container-fluid menu-cards">
+              <div class="row">
+                <div class="card menu-cards-card new-turmas-card animated vanishIn fast">
+                  <input type="number" id="large" placeholder="Largura">
+                  <input type="number" id="altura" placeholder="altura meu deus">
+                  <input type="number" id="profundidade" placeholder="profundidadeh">
+                  <button onclick="renderizar()" class="card-body active">
+                     Renderizar
+                  </button>
+                </div>
+              </div>
+            </div>
+            </center>
+        </div>
+    </div>
+</div>
+</section>
+</body>
+</html>

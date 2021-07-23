@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Verificação
+        </title>
+</head>
+
+<body>
+    <!----------------------------------Inicial----------------------------------->
+
+    <section style="height: 100%;">
+        <div class="container-fluid bg-transparent" style="height: 100%;">
+            <div class="row" style="height: 30%; width: 100;">
+                <div class="col-md-12">
+                    <center>
+                        <center>
+                            <h1 class="card-text text-white" style="width: 50%; padding-top: 6%; font-weight: lighter;">
+                                Verificação de email<br/>
+                            </h1>
+                            <br/>
+                            <br/>
+
+
+                        </center>
+                        <hr style="width: 20rem;" class="bg-white animated animate__flipInY">
+
+                    </center>
+                </div>
+
+            </div>
+
+            <div class="row" style="height: 100%; padding-top: 5rem;">
+                <div class="col-md-4"></div>
+                <div class="col-md-4 bg-white animated animate__slideInUp fast" style="height: 100%; padding-bottom: 3rem; border-radius: 10px; margin: 1rem; margin-bottom: 30rem;">
+                    <form method="POST" action="/verificar" style="padding: 4rem; padding-top: 3rem; padding-bottom: 1rem;">
+                        <% if (data.erro) { %>
+                            <div class="alert alert-warning" role="alert">
+                                <%= data.erro %>
+                            </div>
+                            <% } %>
+                                <p class="card-text">Insira o código enviado para seu email</p>
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Código">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <button class="btn btn-secondary" type="submit">Pronto</button>
+                                </div>
+
+                    </form>
+
+                </div>
+                <div class="col md-4"></div>
+            </div>
+        </div>
+    </section>
+
+</body>
+
+</html>

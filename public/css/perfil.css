@@ -1,0 +1,22 @@
+html,
+body {
+    background-image: linear-gradient(to right, #a517ba, #5f1782);
+    font-family: raleway, sans-serif !important;
+    font-style: normal;
+    width: 100%;
+}
+
+.container-perfil {
+    max-width: 80%;
+    padding: 3rem;
+    margin: 2rem;
+    border-radius: 0.5rem;
+}
+
+.margemResponsiva {
+    margin-bottom: 2rem !important;
+}
+
+.infos {
+    margin: 0.3rem;
+}

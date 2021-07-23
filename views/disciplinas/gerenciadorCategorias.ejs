@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('../externos/files'); %>
+        <title>Moovick | Novo
+        </title>
+</head>
+
+<body>
+    <%- include('../menus/bar', {active: "categ"}); %>
+        <!----------------------------------Inicial----------------------------------->
+        <section style="height: 100%;">
+            <div class="container-fluid bg-transparent" style="height: 100%;">
+                <div class="row" style="height: 30%;">
+                    <div class="col-md-12 animated animate__fadeInLeft logo-animado" style="padding-top: 2em; ">
+
+                        <center>
+                            <h1 class="card-text text-white" style="width: 50%; padding-top: 6%; font-weight: lighter;">
+                                Minhas Categorias<br/>
+
+                            </h1>
+                            <br/>
+                            <br/>
+
+
+                        </center>
+                    </div>
+
+                </div>
+                <div class="row" style="height: 100%; padding-top: 5rem;">
+                    <div class="col-md-3"></div>
+                    <div class="col-md-6 bg-white animated animate__slideInUp fast" style="height: 100%; padding-bottom: 2rem; border-radius: 10px; margin: 1rem; margin-bottom: 0;">
+
+                        <form action="/adicionarCategoria" method="POST" name="formularioCategoria">
+                            <% if (data.erro) { %>
+                                <div class="alert alert-warning" id="erroServer" role="alert">
+                                    <%= data.erro%>
+                                </div>
+                                <% } %>
+                                    <% if (data.categorias[0] != null) { %>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col"></th>
+                                                    <th scope="col">Disciplina</th>
+                                                    <th scope="col">Nome</th>
+                                                    <th scope="col">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% if (data.categorias != null) { %>
+                                                    <% for(var i=0; i<data.categorias.length; i++){ %>
+                                                        <tr>
+                                                            <th scope="row">
+                                                                <%= i+1 %>
+                                                            </th>
+                                                            <td>
+                                                                <%= data.categorias[i]['disciplina'] %>
+                                                            </td>
+                                                            <td>
+                                                                <%= data.categorias[i]['categoria'] %>
+                                                            </td>
+                                                            <td> <a class="card-text text-danger" href="deletarCategoria?id=<%= data.categorias[i]['categoriaId'] %>"><small class="text-danger"><i class="fas fa-trash"></i> Excluir</small></a></td>
+                                                        </tr>
+                                                        <% } %>
+                                                            <% } else { %>
+                                                                <% } %>
+
+
+                                            </tbody>
+                                        </table>
+                                        <br/>
+                                        <% } else { %>
+                                            <p class="card-text text-muted">Você ainda não criou categorias</p>
+                                            <br/>
+                                            <%} %>
+                                                <center>
+                                                    <h6 class="card-text text-muted">Adicionar nova</h6>
+                                                </center>
+                                                <br/>
+                                                <div class="alert alert-warning" id="erro" role="alert" style="display: none;">Erro!!!!!</div>
+                                                <div class="input-group mb-3 bg-white">
+                                                    <input type="text" class="form-control" style="margin-left: 1rem; margin-right: 1rem;" id="titulo" name="titulo" placeholder="Nome para a categoria">
+                                                    <select class="custom-select animeted animate__fadeIn slow" style="margin-left: 1rem; margin-right: 1rem;" id="disciplina" name="disciplina">
+                                        <option selected value="">Disciplina</option>
+                                        <% if (data.disciplinas != null) { %> 
+                                          <% for(var i=0; i<data.disciplinas.length; i++){ %>        
+                                                      <option class="animated animate__backInRight" value="<%= data.disciplinas[i]['id'] %>"><%= data.disciplinas[i]['titulo'] %></option>
+                                              <% } %>
+                                            <% } else { %> 
+                                            <% } %> 
+                                      </select>
+                                                </div>
+                                                <div class="input-group mb-3 bg-white">
+                                                    <button class="btn btn-primary btn-block" style="margin-left: 1rem; margin-right: 1rem;" type="button" onclick="cadastrarCategoria()">Adicionar</button>
+                                                </div>
+                        </form>
+                    </div>
+                    <div class="col md-3"></div>
+                </div>
+            </div>
+        </section>
+
+</body>
