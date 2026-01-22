@@ -73,12 +73,13 @@ var connection = mysql.createPool({
     port: process.env.DB_PORT
 });
 
-db.connect(err => {
-  if (err) {
-    console.error("Erro ao conectar no MySQL:", err.message);
-  } else {
-    console.log("MySQL conectado com sucesso!");
-  }
+connection.getConnection((err, conn) => {
+    if (err) {
+        console.error("❌ Erro ao conectar no MySQL:", err);
+    } else {
+        console.log("✅ MySQL conectado com sucesso!");
+        conn.release();
+    }
 });
 
 //<><><><><><><><><><><><>IMPORTAR MODELS<><><><><><><><><><><><>//
@@ -97,12 +98,13 @@ const { JSONParser } = require('formidable');
 
 // 1. Rota de teste conexão DB externa. 
 app.get("/test-db", (req, res) => {
-  db.query("SELECT 1", (err, results) => {
+  connection.query("SELECT 1", (err, results) => {
     if (err) {
       return res.status(500).send("Erro no banco");
     }
     res.send("Banco conectado com sucesso!");
   });
+});
 });
 
 // 1. Rota do Home (página estática de boas-vindas)
@@ -1088,6 +1090,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
