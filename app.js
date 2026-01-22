@@ -44,7 +44,8 @@ const storageFotoPerfil = multer.diskStorage({
 const uploadFotoPerfil = multer({ storage: storageFotoPerfil });
 
 //<><><><><><><><><><><><>CONEXÃO COM O BANCO DE DADOS<><><><><><><><><><><><>//
-var connection = mysql.createPool({
+const connection = mysql.createPool({
+    connectionLimit: 3, // 🔴 MUITO IMPORTANTE
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -903,5 +904,6 @@ app.post('/salvarLivros', function(req, res) {
         res.render('erro')
     }
 });
+
 
 
