@@ -105,7 +105,6 @@ app.get("/test-db", (req, res) => {
     res.send("Banco conectado com sucesso!");
   });
 });
-});
 
 // 1. Rota do Home (página estática de boas-vindas)
 app.get('/', function(req, res) {
@@ -1090,6 +1089,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
