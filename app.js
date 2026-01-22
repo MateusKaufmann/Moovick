@@ -230,7 +230,6 @@ app.post('/cadastrar', function(req, res) {
     let senhaConfirma = md5(req.body.senhaConfirma);
     let biografia = req.body.descricao;
     let data_nascimento = req.body.data_nascimento;
-    let data = new Date;
     let data = new Date();
     let ano = data.getFullYear();
     let mes = String(data.getMonth() + 1).padStart(2, '0'); // 0 → 01
@@ -1101,6 +1100,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
