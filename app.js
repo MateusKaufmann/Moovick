@@ -231,7 +231,11 @@ app.post('/cadastrar', function(req, res) {
     let biografia = req.body.descricao;
     let data_nascimento = req.body.data_nascimento;
     let data = new Date;
-    let dataAtual = data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate();
+    let data = new Date();
+    let ano = data.getFullYear();
+    let mes = String(data.getMonth() + 1).padStart(2, '0'); // 0 → 01
+    let dia = String(data.getDate()).padStart(2, '0');      // 1 → 01
+    let dataAtual = `${ano}-${mes}-${dia}`; // "2026-01-22"
     if (!nome_completo || !apelido || !email || !senha || !senhaConfirma || !data_nascimento || !biografia) {
         res.render('credenciais/cadastro', {
             data: {
@@ -1097,6 +1101,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
