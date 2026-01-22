@@ -309,7 +309,25 @@ app.post('/cadastrar', function(req, res) {
 })
 .then(() => {
     console.log("Email enviado com sucesso!");
-    // aqui você cadastra o usuário no banco como antes
+                    usuarios.cadastro(connection, function(resultado) {
+                    if (resultado == "user_existente") {
+                        res.render('credenciais/cadastro', {
+                            data: {
+                                erro: "Já existe um usuário vinculado a esse email. Faça login na página inicial."
+                            }
+                        });
+                    } else if (resultado[0]['email'] == email) {
+                        req.session.data_user = resultado[0];
+                        req.session.type = 'aluno';
+                        res.redirect('verificar')
+                    } else {
+                        res.render('credenciais/cadastro', {
+                            data: {
+                                erro: "Ocorreu um problema durante seu cadastro. Pedimos desculpas pelo inconveniente."
+                            }
+                        });
+                    }
+                });
 })
 .catch(err => {
     console.log(err);
@@ -1079,6 +1097,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
