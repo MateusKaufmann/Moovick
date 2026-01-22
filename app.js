@@ -66,10 +66,11 @@ const uploadFotoPerfil = multer({ storage: storageFotoPerfil });
 
 //<><><><><><><><><><><><>CONEXÃO COM O BANCO DE DADOS<><><><><><><><><><><><>//
 var connection = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'moovick'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
 });
 
 //<><><><><><><><><><><><>IMPORTAR MODELS<><><><><><><><><><><><>//
@@ -85,6 +86,16 @@ const { json } = require('body-parser');
 const { JSONParser } = require('formidable');
 
 //<><><><><><><><><><><><>PÁGINAS INICIAIS<><><><><><><><><><><><>//
+
+// 1. Rota de teste conexão DB externa. 
+app.get("/test-db", (req, res) => {
+  db.query("SELECT 1", (err, results) => {
+    if (err) {
+      return res.status(500).send("Erro no banco");
+    }
+    res.send("Banco conectado com sucesso!");
+  });
+});
 
 // 1. Rota do Home (página estática de boas-vindas)
 app.get('/', function(req, res) {
@@ -1069,4 +1080,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
