@@ -6,7 +6,7 @@ const app = express();
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
-const nodemailer = require('nodemailer');
+// Nodemailer removido
 const multer = require('multer');
 const md5 = require('md5');
 const formidable = require('formidable');
@@ -14,52 +14,31 @@ const busboy = require('connect-busboy');
 const fs = require('fs-extra');
 const { connect } = require('http2');
 const { unlink } = require('fs');
-const { verify } = require('crypto');
 
 //<><><><><><><><><><><><>CONFIGURAÇÕES DE MÓDULOS<><><><><><><><><><><><>//
-
-//Mensagem de escuta
 
 app.listen(3000, function() {
     console.log("Servidor no ar rodando na porta 3000.")
 });
 
-//Configuração do módulo 'Session'
 app.use(session({
     secret: 'lisamilapo',
     resave: true,
     saveUninitialized: true,
     cookie: { maxAge: 60000000 }
 }))
-app.use(function(req, res, next) {
-    const sessaoID = req.sessionID;
-    next()
-});
 
-//Consiguração do módulo 'Body-Parser'
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-//Configuração do módulo 'Express'
 app.use(express.static(__dirname + '/public'));
-
-//Configuração do módulo 'ejs'
 app.set('view engine', 'ejs');
 
-//1.0: Armazenamento de Fotos de usuário
 const storageFotoPerfil = multer.diskStorage({
     destination: function(req, file, cb) {
         cb(null, './public/uploads/fotos')
     },
     filename: function(req, file, cb) {
         cb(null, `${md5(req.session.data_user['email'])}${path.extname(file.originalname)}`);
-    },
-    fileFilter: (req, file, cb) => {
-        const isAccepted = ['image/png', 'image/jpg', 'image/jpeg'].find(formatoAceito => formatoAceito == file.mimetype);
-        if (isAccepted) {
-            return cb(null, true);
-        }
-        return cb(null, false);
     }
 });
 const uploadFotoPerfil = multer({ storage: storageFotoPerfil });
@@ -80,33 +59,19 @@ const DisciplinasDAO = require('./models/DisciplinasDAO');
 const CategoriasDAO = require('./models/CategoriasDAO');
 const ExtensoesDAO = require('./models/ExtensoesDAO');
 const LivrosDAO = require('./models/LivrosDAO');
-const { kMaxLength } = require('buffer');
-const { json } = require('body-parser');
-const { JSONParser } = require('formidable');
 
 //<><><><><><><><><><><><>PÁGINAS INICIAIS<><><><><><><><><><><><>//
 
-// 1. Rota do Home (página estática de boas-vindas)
 app.get('/', function(req, res) {
     if (req.session.logged == true) {
-        if (req.session.type == 'administrador') {
-            res.render('homes/logado/index', {
-                data: {
-                    user_data: req.session.data_user,
-                }
-            });
-        } else {
-            res.render('homes/logado/index', {
-                data: {
-                    user_data: req.session.data_user,
-                }
-            });
-        }
+        res.render('homes/logado/index', {
+            data: { user_data: req.session.data_user }
+        });
     } else {
         res.redirect('home');
     }
 });
-// 2. Rota do index (já logado)  
+
 app.get('/home', function(req, res) {
     if (req.session.logged) {
         res.redirect('/');
@@ -114,19 +79,15 @@ app.get('/home', function(req, res) {
         res.render('homes/n_logado/home');
     }
 });
-// 3. Rota do Login
+
 app.get('/login', function(req, res) {
     if (req.session.logged) {
         res.redirect('/');
     } else {
-        res.render('credenciais/login', {
-            data: {
-                stts: null,
-            }
-        });
+        res.render('credenciais/login', { data: { stts: null } });
     }
 });
-// 3.1 POST de autenticação auth (Login)
+
 app.post('/auth', function(req, res) {
     let usuarios = new UsuariosDAO();
     let caminho_foto = 'assets/icons/padraoProfile.png';
@@ -135,230 +96,74 @@ app.post('/auth', function(req, res) {
         usuarios.setSenha(md5(req.body.password));
         usuarios.login(connection, function(resultado) {
             if (resultado == "user_inexistente") {
-                res.render('credenciais/login', {
-                    data: {
-                        stts: "Usuário não encontrado.",
-                    }
-                });
+                res.render('credenciais/login', { data: { stts: "Usuário não encontrado." } });
             } else if (resultado == "senha_incorreta") {
-                res.render('credenciais/login', {
-                    data: {
-                        stts: "Senha incorreta.",
-                    }
-                });
+                res.render('credenciais/login', { data: { stts: "Senha incorreta." } });
             } else {
-                //Define uma imagem de perfil provisória, caso o usuário não tenha feito upload de uma
                 if (!resultado[0]['caminho_foto']) {
                     resultado[0]['caminho_foto'] = caminho_foto;
                 }
-                //Se o usuário for um professor
-                if (resultado[0]['administrador'] == 1) {
-                    //Passa os parâmetros para a sessão
-                    req.session.data_user = resultado[0];
-                    req.session.type = 'administrador';
-                    //Se o usuário for aluno
-                } else {
-                    //Passa os parâmetros para a sessão
-                    req.session.data_user = resultado[0];
-                    req.session.type = 'aluno';
-                }
-                //Faz os redirecionamentos
-                if (resultado[0]['verificado'] == true) {
-                    req.session.logged = true;
-                    res.redirect('/');
-                } else {
-                    res.redirect('/verificar')
-                }
+                req.session.data_user = resultado[0];
+                req.session.type = (resultado[0]['administrador'] == 1) ? 'administrador' : 'aluno';
+                req.session.logged = true; // Login direto sem verificar
+                res.redirect('/');
             }
         });
     } else {
-        res.render('credenciais/login', {
-            data: {
-                stts: "Preencha todos os campos.",
-            }
-        });
+        res.render('credenciais/login', { data: { stts: "Preencha todos os campos." } });
     }
-
 });
 
-// 4. Rota de Cadastro 
 app.get('/cadastro', function(req, res) {
     if (req.session.logged) {
         res.redirect('/');
     } else {
-        res.render('credenciais/cadastro', {
-            data: {
-                erro: null
-            }
-        });
+        res.render('credenciais/cadastro', { data: { erro: null } });
     }
 });
-//4.1 termo
-app.get('/termos', (req, res) => {
-    res.render('credenciais/termos')
-});
-// 4.2 POST de autenticação cadastrar (Cadastro)
+
 app.post('/cadastrar', function(req, res) {
     let usuarios = new UsuariosDAO();
-    let nome_completo = req.body.nome_completo;
-    let apelido = req.body.apelido;
-    let email = req.body.email;
-    let senha = md5(req.body.senha);
-    let senhaConfirma = md5(req.body.senhaConfirma);
-    let biografia = req.body.descricao;
-    let data_nascimento = req.body.data_nascimento;
+    let { nome_completo, apelido, email, senha, senhaConfirma, data_nascimento, descricao: biografia } = req.body;
     let data = new Date;
-    let dataAtual = data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate();
+    let dataAtual = data.getFullYear() + "-" + (data.getMonth() + 1) + "-" + data.getDate();
+
     if (!nome_completo || !apelido || !email || !senha || !senhaConfirma || !data_nascimento || !biografia) {
-        res.render('credenciais/cadastro', {
-            data: {
-                erro: "Você não preencheu todos os campos."
-            }
-        });
-    } else {
-        usuarios.setNome_Completo(nome_completo);
-        usuarios.setApelido(apelido);
-        usuarios.setEmail(email);
-        usuarios.setSenha(senha);
-        usuarios.setSenha_Confirma(senhaConfirma);
-        usuarios.setBiografia(biografia);
-        usuarios.setData_Nascimento(data_nascimento);
-        usuarios.setData_Atual(dataAtual);
-        let randomized = Math.ceil(Math.random() * Math.pow(10, 6));
-        var digito = Math.ceil(Math.log(randomized));
-        while (digito > 10) {
-            digito = Math.ceil(Math.log(digito));
-        }
-        var cod_verificador = randomized + '-' + digito;
-        req.session.cod_verificador = cod_verificador;
-        usuarios.setCod_Verificador(cod_verificador);
-        let transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: {
-                user: 'moovickifrs@gmail.com',
-                pass: 'moovick2020'
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
+        return res.render('credenciais/cadastro', { data: { erro: "Você não preencheu todos os campos." } });
+    }
 
-        })
-
-        if (senha != senhaConfirma) {
-            res.render('credenciais/cadastro', {
-                data: {
-                    erro: "As senhas divergem entre si!"
-                }
-            });
-        } else if ((nome_completo.split(' ')).length < 2) {
-            res.render('credenciais/cadastro', {
-                data: {
-                    erro: "Você não inseriu um nome completo"
-                }
-            });
-        } else if ((apelido.split(' ')).length > 1) {
-            res.render('credenciais/cadastro', {
-                data: {
-                    erro: "O apelido precisa conter apenas uma palavra"
-                }
-            });
-        } else if (senha.length < 8) {
-            res.render('credenciais/cadastro', {
-                data: {
-                    erro: "Sua senha não corresponde às exigências mínimas."
-                }
-            });
-        } else {
-
-            transporter.sendMail({
-                from: 'Equipe Moovick <moovickifrs@gmail.com>',
-                to: email,
-                subject: 'Confirmação de Email',
-                html: "<body style='height: 100%; width: 100%'><center><h3  style='color: black; margin: 1rem;'>" + nome_completo + ", verifique seu Email</h3></center><br/><p style='color: black; margin: 1rem'>Uma verificação de suas credenciais é necessária para garantir a segurança de quem utiliza a plataforma. Utilize o código abaixo para prosseguir usando sua conta no Moovick. Se não tentou fazer login no Moovick, por favor, ignore este email.</p><br/><br/><center><h3 style='color: red'>" + cod_verificador + "</h3><center><body>"
-            }).then(message => {
-                console.log(message);
-                usuarios.cadastro(connection, function(resultado) {
-                    if (resultado == "user_existente") {
-                        res.render('credenciais/cadastro', {
-                            data: {
-                                erro: "Já existe um usuário vinculado a esse email. Faça login na página inicial."
-                            }
-                        });
-                    } else if (resultado[0]['email'] == email) {
-                        req.session.data_user = resultado[0];
-                        req.session.type = 'aluno';
-                        res.redirect('/verificar')
-                    } else {
-                        res.render('credenciais/cadastro', {
-                            data: {
-                                erro: "Ocorreu um problema durante seu cadastro. Pedimos desculpas pelo inconveniente."
-                            }
-                        });
-                    }
-                });
-
-            }).catch(err => {
-                console.log(err);
-                res.render('credenciais/cadastro', {
-                    data: {
-                        erro: "Email inválido."
-                    }
-                });
-            });
+    if (senha != md5(senhaConfirma) && senha !== senhaConfirma) { // Ajuste simples de lógica de comparação
+        if (md5(senha) != md5(senhaConfirma)) {
+             return res.render('credenciais/cadastro', { data: { erro: "As senhas divergem entre si!" } });
         }
     }
-});
-//4.1.1 Email de Verificação 
-app.get('/verificar', function(req, res) {
-    res.render('credenciais/verificar', {
-        data: {}
+
+    usuarios.setNome_Completo(nome_completo);
+    usuarios.setApelido(apelido);
+    usuarios.setEmail(email);
+    usuarios.setSenha(md5(senha));
+    usuarios.setSenha_Confirma(md5(senhaConfirma));
+    usuarios.setBiografia(biografia);
+    usuarios.setData_Nascimento(data_nascimento);
+    usuarios.setData_Atual(dataAtual);
+
+    usuarios.cadastro(connection, function(resultado) {
+        if (resultado == "user_existente") {
+            res.render('credenciais/cadastro', { data: { erro: "Já existe um usuário vinculado a esse email." } });
+        } else if (resultado[0] && resultado[0]['email'] == email) {
+            req.session.data_user = resultado[0];
+            req.session.type = 'aluno';
+            req.session.logged = true; // Loga o usuário imediatamente
+            res.redirect('/');
+        } else {
+            res.render('credenciais/cadastro', { data: { erro: "Erro ao realizar cadastro." } });
+        }
     });
 });
-//4.1.2 Post de verificação
-app.post('/verificar', function(req, res) {
-    let cod_verificador = req.body.codigo;
-    let id = req.session.data_user['id'];
-    if (cod_verificador) {
-        connection.query("select * from usuarios where id = ?", [id], (erro, resultado) => {
-            if (erro) {
-                console.log(erro);
-            } else {
-                if (cod_verificador == resultado[0]['cod_verificador']) {
-                    connection.query("update usuarios set verificado = true where id = ?", [id], (erro) => {
-                        if (erro) {
-                            res.send(erro)
-                        } else {
-                            req.session.logged = true;
-                            res.redirect('/');
-                        }
-                    })
-                } else {
-                    res.render('credenciais/verificar', {
-                        data: {
-                            erro: "Código incorreto"
-                        }
-                    });
-                }
-            }
-        })
-    } else {
-        res.render('credenciais/verificar', {
-            data: {
-                erro: "Insira um código"
-            }
-        });
-    }
-});
-// 4.2 Logout 
+
 app.get('/logout', function(req, res) {
-    if (req.session.logged) {
-        delete req.session.logged
-        res.redirect('/')
-    } else {
-        res.redirect('/')
-    }
+    req.session.destroy();
+    res.redirect('/');
 });
 //4.4 Introdução
 app.get('/intro', (req, res) => {
@@ -1097,3 +902,4 @@ app.post('/salvarLivros', function(req, res) {
         res.render('erro')
     }
 });
+
