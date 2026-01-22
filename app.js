@@ -1,675 +1,1099 @@
-// app.js
 //<><><><><><><><><><><><>MÓDULOS<><><><><><><><><><><><>//
+
 const express = require('express');
-const mysql = require("mysql");
+const mysql = require('mysql');
+const app = express();
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
+const nodemailer = require('nodemailer');
 const multer = require('multer');
 const md5 = require('md5');
 const formidable = require('formidable');
+const busboy = require('connect-busboy');
 const fs = require('fs-extra');
-const sgMail = require('@sendgrid/mail');
+const { connect } = require('http2');
+const { unlink } = require('fs');
+const { verify } = require('crypto');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+//<><><><><><><><><><><><>CONFIGURAÇÕES DE MÓDULOS<><><><><><><><><><><><>//
 
-const app = express();
+//Mensagem de escuta
 
-//<><><><><><><><><><><><>CONFIGURAÇÕES<><><><><><><><><><><><>//
+app.listen(3000, function() {
+    console.log("Servidor no ar rodando na porta 3000.")
+});
 
-// Porta do servidor
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
-
-// Session
+//Configuração do módulo 'Session'
 app.use(session({
     secret: 'lisamilapo',
     resave: true,
     saveUninitialized: true,
     cookie: { maxAge: 60000000 }
-}));
+}))
+app.use(function(req, res, next) {
+    const sessaoID = req.sessionID;
+    next()
+});
 
-// Body parser
+//Consiguração do módulo 'Body-Parser'
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Arquivos estáticos
-app.use(express.static('public'));
+//Configuração do módulo 'Express'
+app.use(express.static(__dirname + '/public'));
 
-// EJS
+//Configuração do módulo 'ejs'
 app.set('view engine', 'ejs');
 
-//<><><><><><><><><><><><>UPLOAD DE FOTOS<><><><><><><><><><><><>//
+//1.0: Armazenamento de Fotos de usuário
 const storageFotoPerfil = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function(req, file, cb) {
         cb(null, './public/uploads/fotos')
     },
-    filename: function (req, file, cb) {
+    filename: function(req, file, cb) {
         cb(null, `${md5(req.session.data_user['email'])}${path.extname(file.originalname)}`);
+    },
+    fileFilter: (req, file, cb) => {
+        const isAccepted = ['image/png', 'image/jpg', 'image/jpeg'].find(formatoAceito => formatoAceito == file.mimetype);
+        if (isAccepted) {
+            return cb(null, true);
+        }
+        return cb(null, false);
     }
 });
 const uploadFotoPerfil = multer({ storage: storageFotoPerfil });
 
-//<><><><><><><><><><><><>CONEXÃO MYSQL<><><><><><><><><><><><>//
+//<><><><><><><><><><><><>CONEXÃO COM O BANCO DE DADOS<><><><><><><><><><><><>//
 var connection = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
-});
-
-connection.getConnection((err, conn) => {
-    if (err) console.error("❌ Erro ao conectar no MySQL:", err);
-    else {
-        console.log("✅ MySQL conectado com sucesso!");
-        conn.release();
-    }
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'moovick'
 });
 
 //<><><><><><><><><><><><>IMPORTAR MODELS<><><><><><><><><><><><>//
+
 const UsuariosDAO = require('./models/UsuariosDAO');
 const ConteudosDAO = require('./models/ConteudosDAO');
 const DisciplinasDAO = require('./models/DisciplinasDAO');
 const CategoriasDAO = require('./models/CategoriasDAO');
 const ExtensoesDAO = require('./models/ExtensoesDAO');
 const LivrosDAO = require('./models/LivrosDAO');
+const { kMaxLength } = require('buffer');
+const { json } = require('body-parser');
+const { JSONParser } = require('formidable');
 
-//<><><><><><><><><><><><>ROTAS<><><><><><><><><><><><>//
+//<><><><><><><><><><><><>PÁGINAS INICIAIS<><><><><><><><><><><><>//
 
-// Test DB
-app.get("/test-db", (req, res) => {
-    connection.query("SELECT 1", (err) => {
-        if (err) return res.status(500).send("Erro no banco");
-        res.send("Banco conectado com sucesso!");
-    });
-});
-
-// Home
-app.get('/', (req, res) => {
-    if (req.session.logged) {
-        res.render('homes/logado/index', { data: { user_data: req.session.data_user } });
+// 1. Rota do Home (página estática de boas-vindas)
+app.get('/', function(req, res) {
+    if (req.session.logged == true) {
+        if (req.session.type == 'administrador') {
+            res.render('homes/logado/index', {
+                data: {
+                    user_data: req.session.data_user,
+                }
+            });
+        } else {
+            res.render('homes/logado/index', {
+                data: {
+                    user_data: req.session.data_user,
+                }
+            });
+        }
     } else {
         res.redirect('home');
     }
 });
-
-// Index
-app.get('/home', (req, res) => {
-    if (req.session.logged) res.redirect('/');
-    else res.render('homes/n_logado/home');
+// 2. Rota do index (já logado)  
+app.get('/home', function(req, res) {
+    if (req.session.logged) {
+        res.redirect('/');
+    } else {
+        res.render('homes/n_logado/home');
+    }
 });
-
-// Login
-app.get('/login', (req, res) => {
-    if (req.session.logged) res.redirect('/');
-    else res.render('credenciais/login', { data: { stts: null } });
+// 3. Rota do Login
+app.get('/login', function(req, res) {
+    if (req.session.logged) {
+        res.redirect('/');
+    } else {
+        res.render('credenciais/login', {
+            data: {
+                stts: null,
+            }
+        });
+    }
 });
-
-// Auth
-app.post('/auth', (req, res) => {
+// 3.1 POST de autenticação auth (Login)
+app.post('/auth', function(req, res) {
     let usuarios = new UsuariosDAO();
     let caminho_foto = 'assets/icons/padraoProfile.png';
-    if (!req.body.email || !req.body.password) {
-        return res.render('credenciais/login', { data: { stts: "Preencha todos os campos." } });
-    }
-    usuarios.setEmail(req.body.email);
-    usuarios.setSenha(md5(req.body.password));
-    usuarios.login(connection, (resultado) => {
-        if (resultado == "user_inexistente") return res.render('credenciais/login', { data: { stts: "Usuário não encontrado." } });
-        if (resultado == "senha_incorreta") return res.render('credenciais/login', { data: { stts: "Senha incorreta." } });
-
-        if (!resultado[0]['caminho_foto']) resultado[0]['caminho_foto'] = caminho_foto;
-        req.session.data_user = resultado[0];
-        req.session.type = resultado[0]['administrador'] ? 'administrador' : 'aluno';
-
-        if (resultado[0]['verificado']) req.session.logged = true, res.redirect('/');
-        else res.redirect('verificar');
-    });
-});
-
-// Cadastro
-app.get('/cadastro', (req, res) => {
-    if (req.session.logged) res.redirect('/');
-    else res.render('credenciais/cadastro', { data: { erro: null } });
-});
-
-// Termos
-app.get('/termos', (req, res) => res.render('credenciais/termos'));
-
-// Cadastrar
-app.post('/cadastrar', (req, res) => {
-    let usuarios = new UsuariosDAO();
-    let { nome_completo, apelido, email, senha: senhaRaw, senhaConfirma: senhaConfirmaRaw, descricao: biografia, data_nascimento } = req.body;
-    let senha = md5(senhaRaw);
-    let senhaConfirma = md5(senhaConfirmaRaw);
-    let dataAtual = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-
-    if (!nome_completo || !apelido || !email || !senhaRaw || !senhaConfirmaRaw || !data_nascimento || !biografia) {
-        return res.render('credenciais/cadastro', { data: { erro: "Você não preencheu todos os campos." } });
-    }
-    if (senha !== senhaConfirma) return res.render('credenciais/cadastro', { data: { erro: "As senhas divergem entre si!" } });
-    if ((nome_completo.split(' ')).length < 2) return res.render('credenciais/cadastro', { data: { erro: "Você não inseriu um nome completo" } });
-    if ((apelido.split(' ')).length > 1) return res.render('credenciais/cadastro', { data: { erro: "O apelido precisa conter apenas uma palavra" } });
-    if (senhaRaw.length < 8) return res.render('credenciais/cadastro', { data: { erro: "Sua senha não corresponde às exigências mínimas." } });
-
-    let randomized = Math.ceil(Math.random() * Math.pow(10, 6));
-    let digito = Math.ceil(Math.log(randomized));
-    while (digito > 10) digito = Math.ceil(Math.log(digito));
-    let cod_verificador = randomized + '-' + digito;
-
-    req.session.cod_verificador = cod_verificador;
-    usuarios.setNome_Completo(nome_completo);
-    usuarios.setApelido(apelido);
-    usuarios.setEmail(email);
-    usuarios.setSenha(senha);
-    usuarios.setSenha_Confirma(senhaConfirma);
-    usuarios.setBiografia(biografia);
-    usuarios.setData_Nascimento(data_nascimento);
-    usuarios.setData_Atual(dataAtual);
-    usuarios.setCod_Verificador(cod_verificador);
-
-    // Enviar e-mail via SendGrid
-    sgMail.send({
-        to: email,
-        from: 'moovickifrs@gmail.com',
-        subject: 'Confirmação de Email',
-        html: `<center><h3>${nome_completo}, verifique seu Email</h3></center>
-               <p>Use o código abaixo:</p>
-               <center><h3 style='color:red'>${cod_verificador}</h3></center>`
-    })
-        .then(() => {
-            usuarios.cadastro(connection, (resultado) => {
-                if (resultado == "user_existente") {
-                    res.render('credenciais/cadastro', { data: { erro: "Já existe um usuário vinculado a esse email. Faça login." } });
-                } else if (resultado[0]['email'] == email) {
+    if (req.body.email && req.body.password) {
+        usuarios.setEmail(req.body.email);
+        usuarios.setSenha(md5(req.body.password));
+        usuarios.login(connection, function(resultado) {
+            if (resultado == "user_inexistente") {
+                res.render('credenciais/login', {
+                    data: {
+                        stts: "Usuário não encontrado.",
+                    }
+                });
+            } else if (resultado == "senha_incorreta") {
+                res.render('credenciais/login', {
+                    data: {
+                        stts: "Senha incorreta.",
+                    }
+                });
+            } else {
+                //Define uma imagem de perfil provisória, caso o usuário não tenha feito upload de uma
+                if (!resultado[0]['caminho_foto']) {
+                    resultado[0]['caminho_foto'] = caminho_foto;
+                }
+                //Se o usuário for um professor
+                if (resultado[0]['administrador'] == 1) {
+                    //Passa os parâmetros para a sessão
+                    req.session.data_user = resultado[0];
+                    req.session.type = 'administrador';
+                    //Se o usuário for aluno
+                } else {
+                    //Passa os parâmetros para a sessão
                     req.session.data_user = resultado[0];
                     req.session.type = 'aluno';
-                    res.redirect('verificar');
-                } else res.render('credenciais/cadastro', { data: { erro: "Ocorreu um problema durante seu cadastro." } });
-            });
-        })
-        .catch(err => {
-            console.log(err);
-            res.render('credenciais/cadastro', { data: { erro: "Não foi possível enviar o email." } });
-        });
-});
-
-// Verificar e-mail
-app.get('/verificar', (req, res) => res.render('credenciais/verificar', { data: {} }));
-
-app.post('/verificar', (req, res) => {
-    let cod_verificador = req.body.codigo;
-    let id = req.session.data_user['id'];
-    if (!cod_verificador) return res.render('credenciais/verificar', { data: { erro: "Insira um código" } });
-
-    connection.query("SELECT * FROM usuarios WHERE id = ?", [id], (erro, resultado) => {
-        if (erro) return console.log(erro);
-        if (cod_verificador == resultado[0]['cod_verificador']) {
-            connection.query("UPDATE usuarios SET verificado = true WHERE id = ?", [id], (erro) => {
-                if (erro) res.send(erro);
-                else { req.session.logged = true; res.redirect('/'); }
-            });
-        } else {
-            res.render('credenciais/verificar', { data: { erro: "Código incorreto" } });
-        }
-    });
-});
-
-// Logout
-app.get('/logout', (req, res) => {
-    if (req.session.logged) delete req.session.logged;
-    res.redirect('/');
-});
-
-//<><><><><><><><><><><><>DISCIPLINAS E CONTEÚDOS<><><><><><><><><><><><>//
-
-// Disciplinas
-app.get('/disciplinas', (req, res) => {
-    if (!req.session.logged) return res.redirect('home');
-    res.render('disciplinas/all', { data: { user_data: req.session.data_user } });
-});
-
-// Disciplina individual
-app.get('/viewDisciplina', (req, res) => {
-    if (!req.session.logged) return res.redirect('home');
-
-    const { id: disciplina, categoria, tipo, user, busca } = req.query;
-    if (!disciplina) return res.redirect('/');
-
-    let usuarios = new UsuariosDAO();
-    let disciplinas = new DisciplinasDAO();
-    let categoriasDAO = new CategoriasDAO();
-    let extensoes = new ExtensoesDAO();
-    let conteudos = new ConteudosDAO();
-
-    disciplinas.setID(disciplina);
-    conteudos.setDisciplina(disciplina);
-    categoriasDAO.setDisciplina(disciplina);
-
-    disciplinas.busca(connection, (dadosDisciplina) => {
-        if (!dadosDisciplina) return res.redirect('/');
-        usuarios.buscaAdmin(connection, (users) => {
-            categoriasDAO.busca(connection, (categorias) => {
-                extensoes.busca(connection, (extensoesDados) => {
-
-                    if (busca) {
-                        conteudos.setTextoBusca("%" + busca + "%");
-                        conteudos.buscaPorPalavraChave(connection, (resultado) => {
-                            res.render('disciplinas/view', {
-                                data: {
-                                    user_data: req.session.data_user,
-                                    allconteudos: resultado.length ? resultado : null,
-                                    categorias,
-                                    idDisciplina: disciplina,
-                                    users,
-                                    extensoes: extensoesDados,
-                                    dadosDisciplina
-                                }
-                            });
-                        });
-                    } else {
-                        conteudos.buscaGeral(connection, (resultado) => {
-                            if (!resultado[0]) resultado = null;
-                            else {
-                                // Filtros combinados
-                                resultado = resultado.filter(c => {
-                                    return (!user || c.criadorId == user) &&
-                                        (!categoria || c.categoriaID == categoria) &&
-                                        (!tipo || c.extensaoID == tipo);
-                                });
-                            }
-                            res.render('disciplinas/view', {
-                                data: {
-                                    user_data: req.session.data_user,
-                                    allconteudos: resultado,
-                                    categorias,
-                                    idDisciplina: disciplina,
-                                    users,
-                                    extensoes: extensoesDados,
-                                    dadosDisciplina
-                                }
-                            });
-                        });
-                    }
-
-                });
-            });
-        });
-    });
-});
-
-// Novo conteúdo (formulário)
-app.get('/novo', (req, res) => {
-    if (!req.session.logged || req.session.type !== "administrador") return res.redirect('/');
-    const { disciplina } = req.query;
-    if (!disciplina) return res.redirect('/');
-    let disciplinas = new DisciplinasDAO();
-    let categoriasDAO = new CategoriasDAO();
-    disciplinas.setID(disciplina);
-    categoriasDAO.setDisciplina(disciplina);
-
-    disciplinas.busca(connection, (dadosDisciplina) => {
-        categoriasDAO.busca(connection, (categorias) => {
-            res.render('disciplinas/novo', {
-                data: {
-                    user_data: req.session.data_user,
-                    dadosDisciplina,
-                    categorias
                 }
-            });
-        });
-    });
-});
-
-// Adicionar conteúdo (POST)
-app.post('/addConteudo', (req, res) => {
-    if (!req.session.logged || req.session.type !== "administrador") return res.redirect('/');
-    const { disciplina } = req.query;
-    if (!disciplina) return res.redirect('/');
-    let conteudos = new ConteudosDAO();
-    const form = new formidable.IncomingForm();
-
-    form.parse(req, (err, fields, files) => {
-        if (err) return res.send("Erro no upload");
-
-        const extensao = path.extname(files.file.name).toLowerCase();
-        let extensaoID;
-        switch (extensao) {
-            case '.txt': extensaoID = 1; break;
-            case '.doc': extensaoID = 2; break;
-            case '.pdf': extensaoID = 3; break;
-            case '.ppt': extensaoID = 4; break;
-            case '.jpeg': extensaoID = 5; break;
-            case '.jpg': extensaoID = 6; break;
-            case '.png': extensaoID = 7; break;
-            case '.docx': extensaoID = 8; break;
-            case '.pptx': extensaoID = 9; break;
-            default: return res.send('Extensão não suportada.');
-        }
-
-        const { titulo, categoria, resumo: descricao } = fields;
-        if (!titulo || !categoria || !descricao) return res.send('Preencha todos os campos');
-
-        const data_upload = new Date();
-        const caminho_arquivo = md5(data_upload.getTime()) + extensao;
-
-        conteudos.setTitulo(titulo);
-        conteudos.setCriador(req.session.data_user['id']);
-        conteudos.setDisciplina(disciplina);
-        conteudos.setCategoria(categoria);
-        conteudos.setData_upload(data_upload.toLocaleDateString());
-        conteudos.setDescricao(descricao);
-        conteudos.setCaminho_arquivo(caminho_arquivo);
-        conteudos.setExtensaoID(extensaoID);
-
-        conteudos.cadastrarConteudo(connection, (resultado) => {
-            if (resultado === true) {
-                fs.move(files.file.path, 'public/uploads/conteudos/' + caminho_arquivo, err => {
-                    if (err) throw err;
-                    res.redirect("/viewDisciplina?id=" + disciplina);
-                });
-            } else res.redirect('/');
-        });
-    });
-});
-
-// Excluir conteúdo
-app.get("/excluirConteudo", (req, res) => {
-    if (!req.session.logged || req.session.type !== "administrador") return res.render('erro');
-    const { id: idConteudo, idDisciplina } = req.query;
-    if (!idConteudo || !idDisciplina) return res.render('erro');
-
-    let conteudos = new ConteudosDAO();
-    conteudos.setId(idConteudo);
-    conteudos.buscaId(connection, (buscado) => {
-        if (!buscado[0]) return res.render("erro");
-        conteudos.excluirConteudo(connection, () => {
-            fs.unlink('public/uploads/conteudos/' + buscado[0].caminho_arquivo, (err) => {
-                if (err) res.render('erro');
-                else res.redirect('/viewDisciplina?id=' + idDisciplina);
-            });
-        });
-    });
-});
-
-// Gerenciador de Categorias
-app.get('/minhasCategorias', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    const categoriasDAO = new CategoriasDAO();
-    const disciplinasDAO = new DisciplinasDAO();
-    const id = req.session.data_user['id'];
-
-    categoriasDAO.setCriador(id);
-    categoriasDAO.buscaCriador(connection, (categorias) => {
-        disciplinasDAO.buscaGeral(connection, (dadosDisciplina) => {
-            res.render('disciplinas/gerenciadorCategorias', {
-                data: {
-                    categorias,
-                    disciplinas: dadosDisciplina,
-                    erro: req.query.erro,
-                    sucesso: req.query.sucesso,
-                    user_data: req.session.data_user,
-                    user_perfil: req.session.data_user
+                //Faz os redirecionamentos
+                if (resultado[0]['verificado'] == true) {
+                    req.session.logged = true;
+                    res.redirect('/');
+                } else {
+                    res.redirect('/verificar')
                 }
-            });
-        });
-    });
-});
-
-// Adicionar categoria
-app.post('/adicionarCategoria', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    const { titulo, disciplina } = req.body;
-    if (!titulo || !disciplina) return res.render('erro');
-
-    const categoriasDAO = new CategoriasDAO();
-    categoriasDAO.setCriador(req.session.data_user['id']);
-    categoriasDAO.setDisciplina(disciplina);
-    categoriasDAO.setTitulo(titulo);
-    categoriasDAO.inserirCategoria(connection, (resultado) => {
-        if (resultado === true) res.redirect('/minhasCategorias');
-        else res.render('erro');
-    });
-});
-
-// Deletar categoria
-app.get('/deletarCategoria', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    const idCat = req.query.id;
-    if (!idCat) return res.redirect('/');
-
-    connection.query('SELECT * FROM categorias WHERE id = ?', [idCat], (err, resultado) => {
-        if (err) return res.send("Erro no servidor");
-        if (resultado[0].criador != req.session.data_user['id']) return res.redirect('/');
-        connection.query('SELECT * FROM conteudos WHERE categoria = ?', [idCat], (err, conteudos) => {
-            if (err) return res.send("Erro no servidor");
-            if (conteudos[0]) return res.redirect('/minhasCategorias?erro=1'); // Categoria com conteúdos
-            connection.query('DELETE FROM categorias WHERE id = ?', [idCat], () => res.redirect('/minhasCategorias'));
-        });
-    });
-});
-
-// Perfis
-app.get('/userProfile', (req, res) => {
-    if (!req.session.logged) return res.redirect('home');
-    const { id } = req.query;
-    if (!id) return res.redirect('home');
-
-    const usuariosDAO = new UsuariosDAO();
-    const conteudosDAO = new ConteudosDAO();
-    usuariosDAO.setID(id);
-    conteudosDAO.setCriador(id);
-
-    usuariosDAO.busca(connection, (dados_perfil) => {
-        if (dados_perfil == "user_inexistente") return res.render("erro");
-        conteudosDAO.buscaPorUser(connection, (num_conteudos) => {
-            dados_perfil[0].numero_de_conteudos = num_conteudos;
-            res.render('perfil/perfil', { data: { erro: req.query.erro, sucesso: req.query.sucesso, user_data: req.session.data_user, user_perfil: dados_perfil[0] } });
-        });
-    });
-});
-
-// Atualizar foto do usuário
-app.post("/mudarFotoUsuario", uploadFotoPerfil.single("fotoPerfil"), (req, res) => {
-    if (!req.file) return res.send("Nenhum arquivo enviado");
-    const usuariosDAO = new UsuariosDAO();
-    const ext = path.extname(req.file.filename).toLowerCase();
-    if (!['.png', '.jpg', '.jpeg'].includes(ext)) {
-        fs.unlink(req.file.path);
-        return res.send("Formato não suportado");
-    }
-    const caminho_foto = "uploads/fotos/" + md5(req.session.data_user['email']) + ext;
-    usuariosDAO.setFoto(caminho_foto);
-    usuariosDAO.setID(req.session.data_user['id']);
-    usuariosDAO.atualizarFoto(connection, (resultado) => {
-        if (resultado === true) {
-            req.session.data_user['caminho_foto'] = caminho_foto;
-            res.redirect('/userProfile?id=' + req.session.data_user['id']);
-        } else res.send("Erro");
-    });
-});
-
-// Atualizar dados do usuário
-app.post("/mudarDados", (req, res) => {
-    if (!req.session.logged) return res.redirect('home');
-    const { senha, senhaConfirma, descricao: biografia, apelido } = req.body;
-    const usuariosDAO = new UsuariosDAO();
-    const id = req.session.data_user['id'];
-
-    if (!apelido || (apelido.split(' ').length > 1)) return res.redirect('/userProfile?id=' + id + '&erro=true');
-    if (!biografia) return res.redirect('/userProfile?id=' + id + '&erro=true');
-
-    usuariosDAO.setID(id);
-    usuariosDAO.setApelido(apelido);
-    usuariosDAO.setBiografia(biografia);
-
-    if (senha && senhaConfirma) {
-        if (senha.length < 8 || senha !== senhaConfirma) return res.redirect('/userProfile?id=' + id + '&erro=true');
-        usuariosDAO.setSenha(md5(senha));
-    }
-
-    usuariosDAO.atualizarDados(connection, (resultado) => {
-        if (resultado === true) {
-            req.session.data_user['biografia'] = biografia;
-            req.session.data_user['apelido'] = apelido;
-            if (senha && senhaConfirma) req.session.data_user['senha'] = md5(senha);
-            res.redirect('/userProfile?id=' + id + '&sucesso=true');
-        } else res.send("Erro");
-    });
-});
-
-// Biblioteca
-app.get('/biblioteca', (req, res) => {
-    if (!req.session.logged) return res.redirect('home');
-    const livrosDAO = new LivrosDAO();
-    const busca = req.query.busca;
-    if (busca) {
-        livrosDAO.setTextoBusca(busca);
-        livrosDAO.buscaPorTexto(connection, (livros) => {
-            res.render('biblioteca/leituras', { data: { livros: livros.length ? livros : null, user_data: req.session.data_user } });
+            }
         });
     } else {
-        connection.query("SELECT livros.id, livros.titulo, livros.autor, livros.ano, livros.caminho_capa, livros.caminho_arquivo, usuarios.apelido, usuarios.id as idUser FROM livros INNER JOIN usuarios ON livros.criador = usuarios.id", (err, resultado) => {
-            if (err) return res.send(err);
-            res.render('biblioteca/leituras', { data: { livros: resultado, user_data: req.session.data_user } });
-        });
-    }
-});
-
-// ==================== LIVROS (UPLOAD / DOWNLOAD / EXCLUSÃO) ====================
-
-// Formulário novo livro
-app.get('/novoLivro', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    res.render('biblioteca/novo', {
-        data: {
-            user_data: req.session.data_user
-        }
-    });
-});
-
-// Adicionar livro
-app.post('/addLivro', upload.single('arquivo'), (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-
-    const { titulo, autor, ano } = req.body;
-    if (!titulo || !autor || !ano || !req.file) return res.render('erro');
-
-    const livrosDAO = new LivrosDAO();
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    if (ext !== '.pdf') {
-        fs.unlinkSync(req.file.path);
-        return res.send('Somente PDF permitido');
-    }
-
-    const caminho = 'uploads/livros/' + md5(Date.now()) + '.pdf';
-
-    livrosDAO.setTitulo(titulo);
-    livrosDAO.setAutor(autor);
-    livrosDAO.setAno(ano);
-    livrosDAO.setCriador(req.session.data_user.id);
-    livrosDAO.setCaminhoArquivo(caminho);
-
-    livrosDAO.inserirLivro(connection, (ok) => {
-        if (ok === true) {
-            fs.rename(req.file.path, 'public/' + caminho, () => {
-                res.redirect('/biblioteca');
-            });
-        } else res.render('erro');
-    });
-});
-
-// Download livro
-app.get('/downloadLivro', (req, res) => {
-    if (!req.session.logged) return res.redirect('/');
-    const { id } = req.query;
-    if (!id) return res.redirect('/');
-
-    connection.query('SELECT caminho_arquivo FROM livros WHERE id = ?', [id], (err, r) => {
-        if (err || !r[0]) return res.render('erro');
-        res.download('public/' + r[0].caminho_arquivo);
-    });
-});
-
-// Excluir livro
-app.get('/excluirLivro', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    const { id } = req.query;
-
-    connection.query('SELECT caminho_arquivo FROM livros WHERE id = ?', [id], (err, r) => {
-        if (err || !r[0]) return res.render('erro');
-        connection.query('DELETE FROM livros WHERE id = ?', [id], () => {
-            fs.unlink('public/' + r[0].caminho_arquivo, () => {
-                res.redirect('/biblioteca');
-            });
-        });
-    });
-});
-
-
-// ==================== ADMIN ====================
-
-// Painel admin
-app.get('/admin', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    res.render('admin/painel', {
-        data: {
-            user_data: req.session.data_user
-        }
-    });
-});
-
-// Listar usuários
-app.get('/adminUsuarios', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    connection.query('SELECT * FROM usuarios', (err, usuarios) => {
-        if (err) return res.render('erro');
-        res.render('admin/usuarios', {
+        res.render('credenciais/login', {
             data: {
-                usuarios,
+                stts: "Preencha todos os campos.",
+            }
+        });
+    }
+
+});
+
+// 4. Rota de Cadastro 
+app.get('/cadastro', function(req, res) {
+    if (req.session.logged) {
+        res.redirect('/');
+    } else {
+        res.render('credenciais/cadastro', {
+            data: {
+                erro: null
+            }
+        });
+    }
+});
+//4.1 termo
+app.get('/termos', (req, res) => {
+    res.render('credenciais/termos')
+});
+// 4.2 POST de autenticação cadastrar (Cadastro)
+app.post('/cadastrar', function(req, res) {
+    let usuarios = new UsuariosDAO();
+    let nome_completo = req.body.nome_completo;
+    let apelido = req.body.apelido;
+    let email = req.body.email;
+    let senha = md5(req.body.senha);
+    let senhaConfirma = md5(req.body.senhaConfirma);
+    let biografia = req.body.descricao;
+    let data_nascimento = req.body.data_nascimento;
+    let data = new Date;
+    let dataAtual = data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate();
+    if (!nome_completo || !apelido || !email || !senha || !senhaConfirma || !data_nascimento || !biografia) {
+        res.render('credenciais/cadastro', {
+            data: {
+                erro: "Você não preencheu todos os campos."
+            }
+        });
+    } else {
+        usuarios.setNome_Completo(nome_completo);
+        usuarios.setApelido(apelido);
+        usuarios.setEmail(email);
+        usuarios.setSenha(senha);
+        usuarios.setSenha_Confirma(senhaConfirma);
+        usuarios.setBiografia(biografia);
+        usuarios.setData_Nascimento(data_nascimento);
+        usuarios.setData_Atual(dataAtual);
+        let randomized = Math.ceil(Math.random() * Math.pow(10, 6));
+        var digito = Math.ceil(Math.log(randomized));
+        while (digito > 10) {
+            digito = Math.ceil(Math.log(digito));
+        }
+        var cod_verificador = randomized + '-' + digito;
+        req.session.cod_verificador = cod_verificador;
+        usuarios.setCod_Verificador(cod_verificador);
+        let transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'moovickifrs@gmail.com',
+                pass: 'moovick2020'
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+
+        })
+
+        if (senha != senhaConfirma) {
+            res.render('credenciais/cadastro', {
+                data: {
+                    erro: "As senhas divergem entre si!"
+                }
+            });
+        } else if ((nome_completo.split(' ')).length < 2) {
+            res.render('credenciais/cadastro', {
+                data: {
+                    erro: "Você não inseriu um nome completo"
+                }
+            });
+        } else if ((apelido.split(' ')).length > 1) {
+            res.render('credenciais/cadastro', {
+                data: {
+                    erro: "O apelido precisa conter apenas uma palavra"
+                }
+            });
+        } else if (senha.length < 8) {
+            res.render('credenciais/cadastro', {
+                data: {
+                    erro: "Sua senha não corresponde às exigências mínimas."
+                }
+            });
+        } else {
+
+            transporter.sendMail({
+                from: 'Equipe Moovick <moovickifrs@gmail.com>',
+                to: email,
+                subject: 'Confirmação de Email',
+                html: "<body style='height: 100%; width: 100%'><center><h3  style='color: black; margin: 1rem;'>" + nome_completo + ", verifique seu Email</h3></center><br/><p style='color: black; margin: 1rem'>Uma verificação de suas credenciais é necessária para garantir a segurança de quem utiliza a plataforma. Utilize o código abaixo para prosseguir usando sua conta no Moovick. Se não tentou fazer login no Moovick, por favor, ignore este email.</p><br/><br/><center><h3 style='color: red'>" + cod_verificador + "</h3><center><body>"
+            }).then(message => {
+                console.log(message);
+                usuarios.cadastro(connection, function(resultado) {
+                    if (resultado == "user_existente") {
+                        res.render('credenciais/cadastro', {
+                            data: {
+                                erro: "Já existe um usuário vinculado a esse email. Faça login na página inicial."
+                            }
+                        });
+                    } else if (resultado[0]['email'] == email) {
+                        req.session.data_user = resultado[0];
+                        req.session.type = 'aluno';
+                        res.redirect('/verificar')
+                    } else {
+                        res.render('credenciais/cadastro', {
+                            data: {
+                                erro: "Ocorreu um problema durante seu cadastro. Pedimos desculpas pelo inconveniente."
+                            }
+                        });
+                    }
+                });
+
+            }).catch(err => {
+                console.log(err);
+                res.render('credenciais/cadastro', {
+                    data: {
+                        erro: "Email inválido."
+                    }
+                });
+            });
+        }
+    }
+});
+//4.1.1 Email de Verificação 
+app.get('/verificar', function(req, res) {
+    res.render('credenciais/verificar', {
+        data: {}
+    });
+});
+//4.1.2 Post de verificação
+app.post('/verificar', function(req, res) {
+    let cod_verificador = req.body.codigo;
+    let id = req.session.data_user['id'];
+    if (cod_verificador) {
+        connection.query("select * from usuarios where id = ?", [id], (erro, resultado) => {
+            if (erro) {
+                console.log(erro);
+            } else {
+                if (cod_verificador == resultado[0]['cod_verificador']) {
+                    connection.query("update usuarios set verificado = true where id = ?", [id], (erro) => {
+                        if (erro) {
+                            res.send(erro)
+                        } else {
+                            req.session.logged = true;
+                            res.redirect('/');
+                        }
+                    })
+                } else {
+                    res.render('credenciais/verificar', {
+                        data: {
+                            erro: "Código incorreto"
+                        }
+                    });
+                }
+            }
+        })
+    } else {
+        res.render('credenciais/verificar', {
+            data: {
+                erro: "Insira um código"
+            }
+        });
+    }
+});
+// 4.2 Logout 
+app.get('/logout', function(req, res) {
+    if (req.session.logged) {
+        delete req.session.logged
+        res.redirect('/')
+    } else {
+        res.redirect('/')
+    }
+});
+//4.4 Introdução
+app.get('/intro', (req, res) => {
+    if (req.session.logged) {
+        res.render('credenciais/intro')
+    }
+});
+
+
+
+//<><><><><><><><><><><><>DISCIPLINAS E CONTEÚDOS<><><><><><><><><><><><>///
+
+
+
+// 5. Rota da página de seleção das Disciplinas
+app.get('/disciplinas', function(req, res) {
+    if (req.session.logged == true) {
+        res.render('disciplinas/all', {
+            data: {
                 user_data: req.session.data_user
             }
         });
-    });
+    } else {
+        res.render('erro');
+    }
+});
+//6. Rota da disciplina individual
+app.get('/viewDisciplina', function(req, res) {
+    if (req.session.logged == true) {
+        let categoria = req.query.categoria;
+        let tipo = req.query.tipo;
+        let user = req.query.user;
+        let busca = req.query.busca;
+        let disciplina = req.query.id;
+        let usuarios = new UsuariosDAO();
+        let disciplinas = new DisciplinasDAO();
+        let categorias = new CategoriasDAO();
+        let extensoes = new ExtensoesDAO();
+        let conteudos = new ConteudosDAO();
+        disciplinas.setID(req.query.id);
+        conteudos.setDisciplina(req.query.id);
+        categorias.setDisciplina(req.query.id);
+
+        if (req.query.id) {
+            disciplinas.busca(connection, function(dadosDisciplina) {
+                if (dadosDisciplina) {
+                    usuarios.buscaAdmin(connection, function(users) {
+                        categorias.busca(connection, function(categorias) {
+                            extensoes.busca(connection, function(extensoes) {
+                                //Caso o usuário digite algum texto no campo de busca
+                                if (busca) {
+                                    busca = "%" + busca + "%";
+                                    conteudos.setTextoBusca(busca);
+                                    conteudos.buscaPorPalavraChave(connection, function(resultado) {
+                                        if (!resultado[0]) {
+                                            resultado = null;
+                                        }
+                                        res.render('disciplinas/view', {
+                                            data: {
+                                                user_data: req.session.data_user,
+                                                allconteudos: resultado,
+                                                categorias: categorias,
+                                                idDisciplina: disciplina,
+                                                users: users,
+                                                extensoes: extensoes,
+                                                dadosDisciplina: dadosDisciplina
+                                            }
+                                        });
+                                    });
+
+                                } else {
+                                    //Busca dinâmica (pode ou não usar os filtros)
+                                    conteudos.buscaGeral(connection, function(resultado) {
+                                        if (!resultado[0]) {
+                                            resultado = null;
+                                        } else {
+                                            let temp = [];
+                                            let cont = 0;
+                                            if (user && categoria && tipo) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['criadorId'] == user) && (resultado[i]['categoriaID'] == categoria) && (resultado[i]['extensaoID']) == tipo) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            } else if (user && categoria) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['criadorId'] == user) && (resultado[i]['categoriaID'] == categoria)) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            } else if (user && tipo) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['criadorId'] == user) && (resultado[i]['extensaoID']) == tipo) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            } else if (user) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['criadorId'] == user)) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            } else if (categoria && tipo) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['categoriaID'] == categoria) && (resultado[i]['extensaoID']) == tipo) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            } else if (categoria) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['categoriaID'] == categoria)) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            } else if (tipo) {
+                                                for (i = 0; i < resultado.length; i++) {
+                                                    if ((resultado[i]['extensaoID']) == tipo) {
+                                                        temp[cont] = resultado[i];
+                                                        cont++;
+                                                    }
+                                                };
+                                                resultado = temp;
+                                            }
+                                        }
+                                        res.render('disciplinas/view', {
+                                            data: {
+                                                user_data: req.session.data_user,
+                                                allconteudos: resultado,
+                                                categorias: categorias,
+                                                idDisciplina: disciplina,
+                                                users: users,
+                                                extensoes: extensoes,
+                                                dadosDisciplina: dadosDisciplina
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                        });
+                    });
+                } else {
+                    res.render('erro');
+                }
+            });
+        } else {
+            res.render('erro');
+        }
+    } else {
+        res.render('erro');
+    }
 });
 
-// Tornar admin
-app.get('/tornarAdmin', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    const { id } = req.query;
-    if (!id) return res.redirect('/adminUsuarios');
+// 7. Adicionar um conteúdo (página do formulário)
+app.get('/novo', function(req, res) {
+    let disciplinas = new DisciplinasDAO();
+    let categorias = new CategoriasDAO();
+    disciplinas.setID(req.query.disciplina);
+    categorias.setDisciplina(req.query.disciplina);
+    if (req.session.logged == true) {
+        if (req.session.type == "administrador") {
+            if (req.query.disciplina) {
+                disciplinas.busca(connection, function(dadosDisciplina) {
+                    categorias.busca(connection, function(categorias) {
+                        res.render('disciplinas/novo', {
+                            data: {
+                                user_data: req.session.data_user,
+                                dadosDisciplina: dadosDisciplina,
+                                categorias: categorias
+                            }
+                        });
+                    });
+                });
+            } else {
+                res.render('erro');
+            }
+        } else {
+            res.render('erro');
 
-    connection.query('UPDATE usuarios SET administrador = true WHERE id = ?', [id], () => {
-        res.redirect('/adminUsuarios');
-    });
+        }
+    } else {
+        res.render('erro');
+    }
+});
+// 7.1 Clique com o botão para adicionar conteúdo (na página do formulário)
+app.post('/addConteudo', function(req, res) {
+    if (req.session.logged == true) {
+        if (req.session.type == "administrador") {
+            let disciplina = req.query.disciplina;
+            if (disciplina) {
+                var conteudos = new ConteudosDAO();
+                var formData = new formidable.IncomingForm();
+                formData.parse(req, function(error, fields, files) {
+                    let extensao = files.file.name.substr(files.file.name.lastIndexOf("."))
+                    let titulo = fields.titulo;
+                    let categoria = fields.categoria;
+                    let descricao = fields.resumo;
+                    let data_upload = new Date();
+                    let caminho_arquivo = md5(data_upload.getMinutes() + data_upload.getSeconds + data_upload.getMilliseconds()) + extensao
+                    data_upload = data_upload.getDate() + "/" + (data_upload.getMonth() + 1) + "/" + data_upload.getFullYear();
+                    if (!extensao || !titulo || !categoria || !descricao) {
+                        res.send('Preencha todos os campos');
+                    } else if (extensao != ".png" && extensao != ".jpg" && extensao != ".jpeg" && extensao != ".txt" && extensao != ".doc" && extensao != ".pdf" && extensao != ".ppt" && extensao != ".docx" && extensao != ".pptx") {
+                        res.send('Extensão não suportada.');
+                    } else {
+                        if (extensao == ".txt") {
+                            extensao = 1;
+                        } else if (extensao == ".doc") {
+                            extensaoID = 2;
+                        } else if (extensao == ".pdf") {
+                            extensaoID = 3;
+                        } else if (extensao == ".ppt") {
+                            extensaoID = 4;
+                        } else if (extensao == ".jpeg") {
+                            extensaoID = 5;
+                        } else if (extensao == ".jpg") {
+                            extensaoID = 6;
+                        } else if (extensao == ".png") {
+                            extensaoID = 7;
+                        } else if (extensao == ".docx") {
+                            extensaoID = 8;
+                        } else if (extensao == ".pptx") {
+                            extensaoID = 9;
+                        }
+                        conteudos.setTitulo(titulo);
+                        conteudos.setCriador(req.session.data_user['id']);
+                        conteudos.setDisciplina(disciplina);
+                        conteudos.setCategoria(categoria);
+                        conteudos.setData_upload(data_upload);
+                        conteudos.setDescricao(descricao);
+                        conteudos.setCaminho_arquivo(caminho_arquivo);
+                        conteudos.setExtensaoID(extensaoID);
+
+                        conteudos.cadastrarConteudo(connection, function(resultado) {
+                            if (resultado == true) {
+                                var oldpath = files.file.path;
+                                var newpath = 'public/uploads/conteudos/' + caminho_arquivo;
+                                var mv = require('mv');
+                                if (oldpath && newpath) {
+                                    mv(oldpath, newpath, function(err) {
+                                        if (err) throw err;
+                                        res.redirect("/viewDisciplina?id=" + disciplina)
+                                    });
+                                }
+                            } else {
+                                res.render('erro');
+                            }
+                        })
+
+                    }
+                })
+            } else {
+                res.render('erro');
+            }
+        } else {
+            res.render('erro');
+        }
+    } else {
+        res.render('erro');
+    }
+});
+//8 Deletar um conteúdo juntamente com o arquivo
+app.get("/excluirConteudo", function(req, res) {
+    if (req.session.type == "administrador") {
+        let idConteudo = req.query.id;
+        let idDisciplina = req.query.idDisciplina;
+        var conteudos = new ConteudosDAO();
+        if (idConteudo && idDisciplina) {
+            conteudos.setId(idConteudo)
+            conteudos.buscaId(connection, function(buscado) {
+                if (buscado[0]) {
+                    conteudos.excluirConteudo(connection, function(resultado) {
+                        fs.unlink('public/uploads/conteudos/' + buscado[0]['caminho_arquivo'], function(erro) {
+                            if (erro) {
+                                res.render('erro')
+                            } else {
+                                res.redirect('/viewDisciplina?id=' + idDisciplina)
+                            }
+
+                        })
+                    })
+                } else {
+                    res.render("erro")
+                }
+            });
+
+        } else {
+            res.render('erro')
+        }
+    } else {
+        res.render('erro')
+    }
+});
+//9 Gerenciador de Categorias inseridas pelo usuário
+app.get('/minhasCategorias', function(req, res) {
+    if (req.session.logged == true) {
+        if (req.session.type == 'administrador') {
+            var categorias = new CategoriasDAO();
+            var disciplinas = new DisciplinasDAO();
+            let id = req.session.data_user['id'];
+            if (id) {
+                categorias.setCriador(id);
+                categorias.buscaCriador(connection, function(categorias) {
+                    disciplinas.buscaGeral(connection, function(dadosDisciplina) {
+                        res.render('disciplinas/gerenciadorCategorias', {
+                            data: {
+                                categorias: categorias,
+                                disciplinas: dadosDisciplina,
+                                erro: req.query.erro,
+                                sucesso: req.query.sucesso,
+                                user_data: req.session.data_user,
+                                user_perfil: req.session.data_user
+                            }
+                        });
+                    });
+                });
+            } else {
+                res.render('erro')
+            }
+        } else {
+            res.render('erro')
+        }
+    } else {
+        res.render('erro');
+    }
+});
+//9.1 Adicionar categoria no sistema 
+app.post('/adicionarCategoria', function(req, res) {
+    if (req.session.logged == true) {
+        if (req.session.type == 'administrador') {
+            let titulo = req.body.titulo;
+            let disciplina = req.body.disciplina;
+            let criador = req.session.data_user['id'];
+            let categorias = new CategoriasDAO();
+            if (titulo && disciplina) {
+                categorias.setCriador(criador);
+                categorias.setDisciplina(disciplina);
+                categorias.setTitulo(titulo);
+                categorias.inserirCategoria(connection, (resultado) => {
+                    if (resultado == true) {
+                        res.redirect('/minhasCategorias')
+                    } else {
+                        res.render('erro')
+                    }
+                })
+            } else {
+                res.render('erro')
+            }
+        } else {
+            res.render('erro')
+        }
+    } else {
+        res.render('erro');
+    }
+});
+//9.2 Deletar uma categoria do sistema 
+app.get('/deletarCategoria', function(req, res) {
+    if (req.session.logged == true) {
+        var categorias = new CategoriasDAO();
+        categorias.setID(req.query.id);
+        if (req.session.type == 'administrador') {
+            categorias.buscaId(connection, (erro, resultado) => {
+                if (erro) throw erro;
+                if (resultado['criador'] = req.session.data_user['id']) {
+                    connection.query('select * from conteudos where categoria =?', [req.query.id], (erro, resultado) => {
+                        if (erro) {
+                            res.send("Erro no servidor");
+                        } else if (resultado[0]) {
+                            let id = req.session.data_user['id'];
+                            if (id) {
+                                connection.query("select categorias.titulo as 'categoria', categorias.id as 'categoriaId', disciplinas.titulo as 'disciplina' from disciplinas inner join categorias on categorias.disciplina = disciplinas.id where categorias.criador = ?", [id], (erro, resultado) => {
+                                    if (erro) {
+                                        res.send('Erro no servidor!')
+                                    } else {
+                                        connection.query('select * from disciplinas', (erro, disciplinas) => {
+                                            if (erro) {
+                                                res.send('erro no servidor!')
+                                            } else {
+                                                res.render('disciplinas/gerenciadorCategorias', {
+                                                    data: {
+                                                        categorias: resultado,
+                                                        disciplinas: disciplinas,
+                                                        erro: "Há conteúdos inseridos nessa categoria. Ela não pode ser deletada.",
+                                                        sucesso: req.query.sucesso,
+                                                        user_data: req.session.data_user,
+                                                        user_perfil: req.session.data_user
+                                                    }
+                                                });
+                                            }
+                                        })
+                                    }
+                                })
+                            } else {
+                                res.render('erro');
+                            }
+                        } else {
+                            connection.query('delete from categorias where id = ?', [req.query.id], (erro) => {
+                                res.redirect('/minhasCategorias')
+                            })
+                        }
+                    })
+                } else {
+                    res.render('erro');
+                }
+
+            })
+        } else {
+            res.render('erro');
+        }
+    } else {
+        res.render('erro');
+    }
+});
+//<><><><><><><><><><><><>PERFIS E EDIÇÕES<><><><><><><><><><><><>///
+// 9. Rota da página de perfil (Exibe informações de qualquer usuário) --------------- OK MVC
+app.get('/userProfile', function(req, res) {
+    if (req.session.logged == true) {
+        let usuarios = new UsuariosDAO();
+        let conteudos = new ConteudosDAO();
+        let id = req.query.id;
+        usuarios.setID(id);
+        conteudos.setCriador(id);
+        if (id) {
+            usuarios.busca(connection, function(dados_perfil) {
+                if (dados_perfil == "user_inexistente") {
+                    res.render("erro")
+                } else {
+                    conteudos.buscaPorUser(connection, function(numero_de_conteudos) {
+                        dados_perfil[0]['numero_de_conteudos'] = numero_de_conteudos;
+                        res.render('perfil/perfil', {
+                            data: {
+                                erro: req.query.erro,
+                                sucesso: req.query.sucesso,
+                                user_data: req.session.data_user,
+                                user_perfil: dados_perfil[0]
+                            }
+                        });
+
+                    });
+                }
+            });
+        } else {
+            res.render('erro');
+        }
+    } else {
+        res.render('erro');
+    }
+});
+//Atualizar foto de perfil --------------------------------- OK MVC
+app.post("/mudarFotoUsuario", uploadFotoPerfil.single("fotoPerfil"), function(req, res) {
+    let usuarios = new UsuariosDAO();
+    if (((req.file['filename'].split('.'))[1]) == 'png' || ((req.file['filename'].split('.'))[1]) == 'jpg' || ((req.file['filename'].split('.'))[1]) == 'PNG' || ((req.file['filename'].split('.'))[1]) == 'JPG') {
+        let diretorio = "uploads/fotos/"
+        let caminho_foto = diretorio + md5(req.session.data_user['email']) + "." + ((req.file['filename'].split('.'))[1]);
+        usuarios.setFoto(caminho_foto);
+        usuarios.setID(req.session.data_user['id'])
+        usuarios.atualizarFoto(connection, function(resultado) {
+            if (resultado == true) {
+                req.session.data_user['caminho_foto'] = caminho_foto;
+                res.redirect('/userProfile?id=' + req.session.data_user['id'])
+            } else {
+                res.render('erro');
+            }
+        });
+    } else {
+        fs.unlink("public/uploads/fotos/" + md5(req.session.data_user['email']) + "." + req.file['filename'].split('.')[1])
+        res.send("Formato não suportado")
+    }
+});
+//Atualizar dados do usuário ------------------------------ OK MVC
+app.post("/mudarDados", function(req, res) {
+    let usuarios = new UsuariosDAO();
+    if (req.session.logged == true) {
+        let id = req.session.data_user['id'];
+        let senha = req.body.senha;
+        let senhaConfirma = req.body.senhaConfirma;
+        let biografia = req.body.descricao;
+        let apelido = req.body.apelido;
+
+        if (apelido) {
+            if ((apelido.split(' ')).length > 1) {
+                res.redirect('/userProfile?id=' + id + '&erro=true')
+            } else {
+                if (biografia) {
+                    if (senha && senhaConfirma) {
+                        if (senha.length >= 8) {
+                            if (senha == senhaConfirma) {
+                                senha = md5(senha)
+                                usuarios.setID(id)
+                                usuarios.setSenha(senha)
+                                usuarios.setBiografia(biografia)
+                                usuarios.setApelido(apelido)
+                                usuarios.atualizarDados(connection, function(resultado) {
+                                    if (resultado == true) {
+                                        req.session.data_user['biografia'] = biografia
+                                        req.session.data_user['senha'] = senha
+                                        req.session.data_user['apelido'] = apelido
+                                        res.redirect('/userProfile?id=' + id + '&sucesso=true')
+                                    } else {
+                                        res.render('erro');
+                                    }
+                                });
+                            }
+                        }
+                    } else {
+                        usuarios.setID(id)
+                        usuarios.setBiografia(biografia)
+                        usuarios.setApelido(apelido)
+                        usuarios.atualizarDados(connection, function(resultado) {
+                            if (resultado == true) {
+                                req.session.data_user['biografia'] = biografia
+                                req.session.data_user['apelido'] = apelido
+                                res.redirect('/userProfile?id=' + id + '&sucesso=true')
+                            } else {
+                                res.render('erro');
+                            }
+                        });
+                    }
+                } else {
+                    res.redirect('/userProfile?id=' + id + '&erro=true')
+                }
+            }
+
+
+
+        } else {
+
+
+            res.redirect('/userProfile?id=' + id + '&erro=true')
+
+        }
+    } else {
+        res.render('erro');
+    }
 });
 
-// Remover admin
-app.get('/removerAdmin', (req, res) => {
-    if (!req.session.logged || req.session.type !== 'administrador') return res.redirect('/');
-    const { id } = req.query;
-    if (!id) return res.redirect('/adminUsuarios');
 
-    connection.query('UPDATE usuarios SET administrador = false WHERE id = ?', [id], () => {
-        res.redirect('/adminUsuarios');
-    });
+//BIBLIOTECA ONLINE
+
+//10.1 Visualizar
+app.get('/biblioteca', function(req, res) {
+    if (req.session.logged == true) {
+        let livros = new LivrosDAO();
+        let busca = req.query.busca;
+        if (busca) {
+            livros.setTextoBusca(busca);
+            livros.buscaPorTexto(connection, function(livros) {
+                if (livros[0]) {
+                    res.render('biblioteca/leituras', {
+                        data: {
+                            livros: livros,
+                            user_data: req.session.data_user
+                        }
+                    });
+                } else {
+                    res.send("Nenhum livro");
+                }
+            })
+        } else {
+            livros.list(connection, function(result) {
+                if (result[0]) {
+                    res.render('biblioteca/leituras', {
+                        data: {
+                            livros: result,
+                            user_data: req.session.data_user
+                        }
+                    });
+                } else {
+                    res.render('biblioteca/leituras', {
+                        data: {
+                            livros: null,
+                            user_data: req.session.data_user
+                        }
+                    });
+                }
+            })
+        }
+
+
+    } else {
+        res.render('erro');
+    }
+});
+//10.2 Adicionar livro
+app.get('/addLivro', function(req, res) {
+    if (req.session.logged == true) {
+        let erroCode = req.query.erroCode;
+        if (erroCode == 1) {
+            erroCode = "Preencha todos os campos"
+        } else if (erroCode == 2) {
+            erroCode = "Livro precisa ser em PDF"
+        } else if (erroCode == 3) {
+            erroCode = "Capa precisa ser em JPG ou PNG"
+        }
+        if (req.session.type == "administrador") {
+            res.render('biblioteca/addLivro', {
+                data: {
+                    erro: erroCode,
+                    user_data: req.session.data_user
+                }
+            });
+
+        } else {
+            res.render('erro');
+        }
+    } else {
+        res.render('erro');
+    }
+});
+app.post('/addLivro', function(req, res) {
+    if (req.session.logged == true) {
+        if (req.session.type == "administrador") {
+            let id = req.session.data_user['id'];
+            if (id) {
+                var formData = new formidable.IncomingForm();
+                formData.parse(req, function(error, fields, files) {
+                    let extensaoLivro = files.livro.name.substr(files.livro.name.lastIndexOf("."))
+                    let titulo = fields.titulo;
+                    let autor = fields.autor;
+                    let ano = fields.ano;
+                    let creation = new Date()
+                    let time = md5(creation.getMinutes() + creation.getSeconds + creation.getMilliseconds())
+                    let nome_livro = "leitura_" + time + extensaoLivro
+                    creation = creation.getDate() + "/" + (creation.getMonth() + 1) + "/" + creation.getFullYear();
+                    if (!titulo || !autor || !ano || !extensaoLivro) {
+                        res.redirect('/addLivro?erroCode=1');
+                    } else if (extensaoLivro != ".pdf") {
+                        res.redirect('/addLivro?erroCode=2');
+                    } else {
+                        let livros = new LivrosDAO();
+                        livros.setTitulo(titulo);
+                        livros.setAutor(autor);
+                        livros.setAno(ano);
+                        livros.setNome(nome_livro);
+                        livros.setIdUser(id);
+                        livros.create(connection, function(result) {
+                            var oldpathLivro = files.livro.path;
+                            var newpathLivro = 'public/uploads/livros/' + nome_livro;
+                            var mv = require('mv');
+                            if (oldpathLivro && newpathLivro) {
+                                mv(oldpathLivro, newpathLivro, function(err) {
+                                    if (err) throw err;
+                                    res.redirect('/biblioteca');
+                                });
+                            }
+
+                        })
+                    }
+                })
+            } else {
+                res.render('erro');
+            }
+        } else {
+            res.render('erro');
+        }
+    } else {
+        res.render('erro');
+    }
 });
 
+//10.3 Deletar Livro
+app.get("/deletarLivro", function(req, res) {
+    if (req.session.type == "administrador") {
+        let idLivro = req.query.id;
+        let id = req.session.data_user['id'];
+        let livros = new LivrosDAO();
+        if (idLivro) {
+            livros.setId(idLivro)
+            livros.buscaPorId(connection, (result) => {
+                if (result[0] && (result[0]['criador'] == id)) {
+                    fs.unlink('public/uploads/livros/' + result[0]['caminho_arquivo'], function(erro) {
+                        if (erro) {
+                            res.send(erro);
+                        } else {
+                            livros.delete(connection, function(result) {
+                                if (result) {
+                                    res.redirect("/biblioteca");
+                                } else {
+                                    res.render('erro');
+                                }
+                            })
 
-// ==================== ERROS ====================
+                        }
+                    });
+                } else {
+                    res.render('erro')
+                }
 
-app.use((req, res) => {
-    res.status(404).render('erro404');
+            })
+        } else {
+            res.redirect('/')
+        }
+    } else {
+        res.redirect('/')
+    }
 });
 
+app.get('/atualizarLivros', function(req, res) {
+    if (req.session.logged == true) {
+        var livros = new LivrosDAO();
+        livros.setId(req.query.id);
 
-// ==================== SERVIDOR ====================
+        livros.buscaPorId(connection, function(result) {
+            res.render('biblioteca/atualizar.ejs', { livros: result, data: { user_data: req.session.data_user } });
 
-const PORT = process.env.PORT || 3000;
+        });
+    } else {
+        res.render('erro')
+    }
 
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
 });
 
+app.post('/salvarLivros', function(req, res) {
+    if (req.session.logged == true) {
+        var livros = new LivrosDAO();
+        livros.setId(req.body.id);
+        livros.setTitulo(req.body.titulo);
+        livros.setAutor(req.body.autor);
+        livros.setAno(req.body.ano);
+        livros.update(connection, function(erro, result) {
+            res.redirect("/biblioteca");
+        });
 
+    } else {
+        res.render('erro')
+    }
+});
