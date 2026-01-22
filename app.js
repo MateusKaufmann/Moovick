@@ -15,6 +15,7 @@ const fs = require('fs-extra');
 const { connect } = require('http2');
 const { unlink } = require('fs');
 const { verify } = require('crypto');
+const PORT = process.env.PORT || 3000;
 
 //<><><><><><><><><><><><>CONFIGURAÇÕES DE MÓDULOS<><><><><><><><><><><><>//
 
@@ -1062,4 +1063,5 @@ app.get("/deletarLivro", function(req, res) {
     } else {
         res.redirect('/')
     }
+
 });
