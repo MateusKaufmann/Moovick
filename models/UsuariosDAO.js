@@ -78,7 +78,7 @@ module.exports = class UsuariosDAO {
             } else {
                 let caminho_foto = 'uploads/fotos/padraoProfile.png';
 
-                connection.query("insert usuarios (id, email, `senha`, apelido, nome_completo, data_nascimento, data_ingresso, biografia, caminho_foto, administrador, cod_verificador) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [null, this.email, this.senha, this.apelido, this.nome_completo, this.data_nascimento, this.dataAtual, this.biografia, caminho_foto, false, this.cod_verificador], (erro) => {
+                connection.query("insert usuarios (id, email, `senha`, apelido, nome_completo, data_nascimento, data_ingresso, biografia, caminho_foto, administrador) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [null, this.email, this.senha, this.apelido, this.nome_completo, this.data_nascimento, this.dataAtual, this.biografia, caminho_foto, false], (erro) => {
                     if (erro) throw erro;
                     connection.query("select * from usuarios where email=?", [this.email], (erro, resultado) => {
                         if (erro) throw erro;
@@ -131,4 +131,5 @@ module.exports = class UsuariosDAO {
 
         });
     };
+
 }
