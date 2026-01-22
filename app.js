@@ -12,9 +12,12 @@ const md5 = require('md5');
 const formidable = require('formidable');
 const busboy = require('connect-busboy');
 const fs = require('fs-extra');
+const sgMail = require('@sendgrid/mail');
 const { connect } = require('http2');
 const { unlink } = require('fs');
 const { verify } = require('crypto');
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY); 
 
 //<><><><><><><><><><><><>CONFIGURAÇÕES DE MÓDULOS<><><><><><><><><><><><>//
 
@@ -292,41 +295,28 @@ app.post('/cadastrar', function(req, res) {
             });
         } else {
 
-            transporter.sendMail({
-                from: 'Equipe Moovick <moovickifrs@gmail.com>',
-                to: email,
-                subject: 'Confirmação de Email',
-                html: "<body style='height: 100%; width: 100%'><center><h3  style='color: black; margin: 1rem;'>" + nome_completo + ", verifique seu Email</h3></center><br/><p style='color: black; margin: 1rem'>Uma verificação de suas credenciais é necessária para garantir a segurança de quem utiliza a plataforma. Utilize o código abaixo para prosseguir usando sua conta no Moovick. Se não tentou fazer login no Moovick, por favor, ignore este email.</p><br/><br/><center><h3 style='color: red'>" + cod_verificador + "</h3><center><body>"
-            }).then(message => {
-                console.log(message);
-                usuarios.cadastro(connection, function(resultado) {
-                    if (resultado == "user_existente") {
-                        res.render('credenciais/cadastro', {
-                            data: {
-                                erro: "Já existe um usuário vinculado a esse email. Faça login na página inicial."
-                            }
-                        });
-                    } else if (resultado[0]['email'] == email) {
-                        req.session.data_user = resultado[0];
-                        req.session.type = 'aluno';
-                        res.redirect('verificar')
-                    } else {
-                        res.render('credenciais/cadastro', {
-                            data: {
-                                erro: "Ocorreu um problema durante seu cadastro. Pedimos desculpas pelo inconveniente."
-                            }
-                        });
-                    }
-                });
-
-            }).catch(err => {
-                console.log(err);
-                res.render('credenciais/cadastro', {
-                    data: {
-                        erro: "Email inválido."
-                    }
-                });
-            });
+            sgMail.send({
+    to: email, // email do usuário
+    from: 'moovickifrs@gmail.com', // email validado no SendGrid
+    subject: 'Confirmação de Email',
+    html: `
+      <body>
+        <center><h3>${nome_completo}, verifique seu Email</h3></center>
+        <p>Uma verificação de suas credenciais é necessária para garantir a segurança. Use o código abaixo:</p>
+        <center><h3 style='color:red'>${cod_verificador}</h3></center>
+      </body>
+    `
+})
+.then(() => {
+    console.log("Email enviado com sucesso!");
+    // aqui você cadastra o usuário no banco como antes
+})
+.catch(err => {
+    console.log(err);
+    res.render('credenciais/cadastro', {
+        data: { erro: "Não foi possível enviar o email." }
+    });
+});
         }
     }
 });
@@ -1089,6 +1079,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
