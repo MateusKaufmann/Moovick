@@ -1,7 +1,7 @@
 //<><><><><><><><><><><><>MÓDULOS<><><><><><><><><><><><>//
 
 const express = require('express');
-const mysql = require("mysql2");
+const mysql = require("mysql");
 const app = express();
 const session = require('express-session');
 const bodyParser = require('body-parser');
@@ -1088,6 +1088,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
 
